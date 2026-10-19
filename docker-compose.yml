@@ -1,4 +1,3 @@
-version: '3.6'
 services:
 
   # MySQL service: 
@@ -71,7 +70,7 @@ services:
     container_name: vacations-react-container
     restart: unless-stopped
     ports:
-      - 80:3000
+      - 3000:3000
 
 # ------------------------------------------------------------------------------------------
 

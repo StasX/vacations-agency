@@ -3,3 +3,7 @@ __pycache__
 node_modules
 server.old
 .vscode
+build
+.dockerignore
+env
+.env

@@ -1,10 +1,7 @@
-FROM mysql:26.7.0
+FROM mysql:26.7.0-oraclelinux9
 
-RUN dnf upgrade -y \
-        --exclude='mysql*' \
-        --exclude='mysql-community-*' && \
-    dnf clean all
+RUN microdnf upgrade -y && \
+    microdnf clean all
 
-COPY ./data.sql /docker-entrypoint-initdb.d
+COPY ./data.sql /docker-entrypoint-initdb.d/
 
-USER mysql

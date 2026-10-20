@@ -1,40 +1,45 @@
 services:
 
   # MySQL service: 
-  vacations-database-service:
-    image: sm1986/vacations-database-image:1.0
+  vacations-database:
+    image: sm1986/vacations-database:1.0
     build: ./MySQL
-    container_name: vacations-database-container
+    container_name: vacations-database
     volumes:
       - vacations-volume:/var/lib/mysql
     environment:
-      MYSQL_HOST: localhost
-      MYSQL_USER: Cool
-      MYSQL_PASSWORD: Not_Not_Cool
-      MYSQL_DATABASE: vacation_agency
-      MYSQL_ROOT_PASSWORD: Not_Not_Cool!
-    restart: unless-stopped
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
       timeout: 5s
-      retries: 160
+      retries: 5
+    restart: unless-stopped
 
   # ------------------------------------------------------------------------------------------
 
   # Django service: 
-  vacations-django-service:
+  vacations-statistics:
     depends_on:
-      vacations-database-service:
+      vacations-database:
         condition: service_healthy
-    image: sm1986/vacations-django-image:1.0
+    image: sm1986/vacations-statistics:1.0
     build: ./Django
-    container_name: vacations-django-container
+    container_name: vacations-statistics
     environment:
-      MYSQL_HOST: vacations-database-service
-      MYSQL_USER: Cool
-      MYSQL_PASSWORD: Not_Not_Cool
-      MYSQL_DATABASE: vacation_agency
-      MYSQL_ROOT_PASSWORD: Not_Not_Cool!
+      MYSQL_HOST: vacations-database
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD} 
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      SECRET_KEY: ${SECRET_KEY}
+      PASSWORDS_SALT: ${PASSWORDS_SALT}
+      ISSUER: ${ISSUER}
+      AUDIENCE: ${AUDIENCE}
     restart: unless-stopped
     ports:
       - 8000:8000
@@ -42,19 +47,20 @@ services:
   # ------------------------------------------------------------------------------------------
 
   # Flask service: 
-  vacations-flask-service:
+  vacations-catalog:
     depends_on:
-      vacations-database-service:
+      vacations-database:
         condition: service_healthy
-    image: sm1986/vacations-flask-image:1.0
+    image: sm1986/vacations-catalog:1.0
     build: ./Flask 
-    container_name: vacations-flask-container
+    container_name: vacations-catalog
     environment:
-      MYSQL_HOST: vacations-database-service
-      MYSQL_USER: Cool
-      MYSQL_PASSWORD: Not_Not_Cool
-      MYSQL_DATABASE: vacation_agency
-      MYSQL_ROOT_PASSWORD: Not_Not_Cool!
+      MYSQL_HOST: vacations-database
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      PASSWORDS_SALT: ${PASSWORDS_SALT}
     restart: unless-stopped
     ports:
       - 5000:5000
@@ -62,12 +68,12 @@ services:
   # ------------------------------------------------------------------------------------------
 
   # React service:
-  react-service:
+  vacations-statistics-frontend:
     depends_on:
-      - vacations-django-service
-    image: sm1986/vacations-react-image:1.0
+      - vacations-statistics
+    image: sm1986/vacations-statistics-frontend:1.0
     build: ./React
-    container_name: vacations-react-container
+    container_name: vacations-statistics-frontend
     restart: unless-stopped
     ports:
       - 3000:3000

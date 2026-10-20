@@ -1,10 +1,32 @@
-# Install Debian OS + python 3 so requirements.txt could be install without errors (system bug / missing dependencies):
-    FROM python:3
+# BUILDER
+FROM python:3-14-alpine3.23 AS builder
 
-    WORKDIR /app
-    RUN python -m venv env
-    COPY requirements.txt /app
-    RUN /app/env/bin/pip install -r requirements.txt
-    COPY . /app
-    ENTRYPOINT /app/env/bin/python src/manage.py runserver 0.0.0.0:8000
-    
+WORKDIR /app
+RUN python -m venv /app/env && \
+    /app/env/bin/pip install --upgrade pip
+COPY requirements.txt .
+
+RUN /app/env/bin/pip install --no-cache-dir -r requirements.txt
+
+# SERVER
+FROM python:3-14-alpine3.23
+
+ENV APP_HOST=0.0.0.0 \
+    PATH="/app/env/bin:$PATH"
+WORKDIR /app
+
+RUN apk update && \
+    apk upgrade --no-cache && \
+    apk add --no-cache curl && \
+    python -m pip install --upgrade pip
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /app/env /app/env
+COPY src/ .
+
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000 || exit 1
+ENTRYPOINT ["sh", "-c", "exec gunicorn --bind ${APP_HOST}:8000 config.wsgi:application"]

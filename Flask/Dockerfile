@@ -15,7 +15,7 @@ ENV APP_HOST=0.0.0.0 \
 WORKDIR /app
 RUN apk update && \
     apk upgrade --no-cache && \
-    apk add --no-cache curl && \
+    apk add --no-cache curl mariadb-connector-c && \
     python -m pip install --upgrade pip
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY --from=builder /app/env /app/env

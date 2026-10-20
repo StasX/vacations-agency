@@ -16,6 +16,9 @@ class DAL:
         with self.connection.cursor(dictionary=True) as cursor:
             cursor.execute(sql, params)
             table = cursor.fetchall()
+            # Consume any remaining results (important for stored procedures)
+            while cursor.nextset():
+                pass
             return table
 
     def get_scalar(self, sql, params=None):
@@ -24,6 +27,9 @@ class DAL:
         with self.connection.cursor(dictionary=True) as cursor:
             cursor.execute(sql, params)
             scalar = cursor.fetchone()
+            # Consume any remaining results (important for stored procedures)
+            while cursor.nextset():
+                pass
             return scalar
 
     def insert(self, sql, params=None):
@@ -33,6 +39,9 @@ class DAL:
             cursor.execute(sql, params)
             self.connection.commit()
             last_row_id = cursor.lastrowid
+            # Consume any remaining results (important for stored procedures)
+            while cursor.nextset():
+                pass
             return last_row_id
 
     def update(self, sql, params=None):
@@ -42,6 +51,9 @@ class DAL:
             cursor.execute(sql, params)
             self.connection.commit()
             row_count = cursor.rowcount
+            # Consume any remaining results (important for stored procedures)
+            while cursor.nextset():
+                pass
             return row_count
 
     def delete(self, sql, params=None):
@@ -51,6 +63,9 @@ class DAL:
             cursor.execute(sql, params)
             self.connection.commit()
             row_count = cursor.rowcount
+            # Consume any remaining results (important for stored procedures)
+            while cursor.nextset():
+                pass
             return row_count
 
     def close(self):

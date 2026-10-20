@@ -1,6 +1,6 @@
 # Vacations Agency
 
-A containerized vacation agency platform featuring a **Flask customer application** for registration, vacation browsing, and likes, alongside a **React + Django statistics dashboard** for agency administrators. Both applications use a shared MySQL database.
+A containerized vacation agency platform featuring a **Flask application** for customer registration, vacation browsing, likes, and administrator vacation management, alongside a **React + Django statistics dashboard** for agency administrators. Both applications use a shared MySQL database.
 
 ![Agency Statistics Dashboard](docs/screenshots/statistics/dashboard.png)
 
@@ -12,6 +12,13 @@ A containerized vacation agency platform featuring a **Flask customer applicatio
 - Browse vacation offers with destination photos, travel dates, descriptions, and prices.
 - Like or unlike vacations.
 - See the number of likes on vacation cards.
+
+### Vacation administration — Flask
+
+- Access a separate administrator interface.
+- Add new vacation offers with destination, description, dates, price, and cover image.
+- Edit existing vacation details and cover images.
+- Delete vacation offers.
 
 ### Agency statistics — React + Django
 
@@ -33,11 +40,11 @@ A containerized vacation agency platform featuring a **Flask customer applicatio
 ## Architecture
 
 ```text
-Customer browser                  Agency browser
+Customer / admin browser          Agency browser
        |                                |
        v                                v
 Flask application                React frontend
-(frontend + backend)                    |
+(customers + admins)                    |
        |                                v
        |                            Django API
        |                                |
@@ -47,7 +54,7 @@ Flask application                React frontend
                    MySQL
 ```
 
-The Flask application handles customer-facing operations, while React requests statistics from the Django API. Both backend services work with the shared database.
+The Flask application handles customer-facing operations and vacation administration, while React requests statistics from the Django API. Both backend services work with the shared database.
 
 ## Screenshots
 
@@ -64,6 +71,20 @@ The Flask application handles customer-facing operations, while React requests s
 **Vacation catalog and likes**
 
 ![Vacation catalog](docs/screenshots/agency/vacations.png)
+
+### Vacation administration (Flask)
+
+**Administrator vacation list**
+
+![Administrator vacation list](docs/screenshots/agency/admin/list.png)
+
+**Add vacation**
+
+![Add vacation form](docs/screenshots/agency/admin/add.png)
+
+**Edit vacation**
+
+![Edit vacation form](docs/screenshots/agency/admin/edit.png)
 
 ### Agency statistics (React + Django)
 
@@ -88,11 +109,11 @@ The Flask application handles customer-facing operations, while React requests s
 ```text
 vacations-agency/
 ├── Django/              # Statistics backend API
-├── Flask/               # Customer-facing application
+├── Flask/               # Customer and administrator application
 ├── Mysql/               # Database configuration
 ├── React/               # Agency statistics frontend
 ├── docs/
-│   └── screenshots/     # Application screenshots
+│   └── screenshots/     # Customer, admin, and dashboard screenshots
 ├── docker-compose.yml   # Service orchestration
 └── LICENSE
 ```

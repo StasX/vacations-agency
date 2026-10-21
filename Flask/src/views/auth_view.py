@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, request
+from flask import Blueprint, render_template, request, redirect, url_for
 from facades.auth_facade import AuthFacade
 from models.client_errors import ValidationError, AuthError
 

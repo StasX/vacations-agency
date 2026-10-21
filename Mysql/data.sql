@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 13, 2024 at 04:55 PM
+-- Generation Time: Oct 21, 2026 at 04:01 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -28,45 +28,39 @@ DELIMITER $$
 -- Procedures
 --
 CREATE DEFINER=`root`@`localhost` PROCEDURE `add_user` (IN `first_name` VARCHAR(15), IN `last_name` VARCHAR(15), IN `an_email` VARCHAR(30), IN `a_password` VARCHAR(128), IN `a_role_id` INT(11))   BEGIN
-		INSERT INTO users (first_name, last_name, email, password, role_id) VALUES (first_name, last_name, an_email, a_password, a_role_id);
-	END$$
+	INSERT INTO users (first_name, last_name, email, password, role_id) VALUES (first_name, last_name, an_email, a_password, a_role_id);
+END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `add_vacation` (IN `a_country_id` INT(11), IN `a_description` VARCHAR(500), IN `a_start_date` DATE, IN `an_end_date` DATE, IN `a_price` FLOAT(7,2), IN `an_image` VARCHAR(50))   BEGIN
-
-		INSERT INTO vacations(country_id, description,start_date,end_date,price,image) VALUES (a_country_id, a_description, a_start_date, an_end_date, a_price, an_image);
+	INSERT INTO vacations(country_id, description,start_date,end_date,price,image) VALUES (a_country_id, a_description, a_start_date, an_end_date, a_price, an_image);
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_all_vacations` (IN `user_id` INT(11))   BEGIN
-    	SELECT 
-    vacations.id AS id,
-    countries.name,
-    vacations.description,
-    vacations.start_date,
-    vacations.end_date,
-    vacations.price,
-    vacations.image,
-    COUNT(likes.vacation_id) AS likes_count,
-    EXISTS(SELECT * FROM likes WHERE likes.vacation_id=vacations.id AND likes.user_id=user_id) AS liked 
-FROM 
-    vacations 
-CROSS JOIN 
-    countries ON vacations.country_id = countries.id 
-LEFT JOIN
-    likes ON vacations.id = likes.vacation_id
-GROUP BY
-    vacations.id,
-    countries.name,
-    vacations.description,
-    vacations.start_date,
-    vacations.end_date,
-    vacations.price,
-    vacations.image
-ORDER BY 
-    vacations.start_date;
+	SELECT 
+    	vacations.id AS id,
+    	countries.name,
+    	vacations.description,
+    	vacations.start_date,
+    	vacations.end_date,
+    	vacations.price,
+    	vacations.image,
+    	COUNT(likes.vacation_id) AS likes_count,
+    	EXISTS(SELECT * FROM likes WHERE likes.vacation_id=vacations.id AND likes.user_id=user_id) AS liked 
+	FROM vacations CROSS JOIN countries ON vacations.country_id = countries.id LEFT JOIN likes ON vacations.id = likes.vacation_id
+	GROUP BY
+    	vacations.id,
+    	countries.name,
+    	vacations.description,
+    	vacations.start_date,
+    	vacations.end_date,
+    	vacations.price,
+    	vacations.image
+	ORDER BY 
+    	vacations.start_date;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_likes_count` (`a_vacation_id` INT(11))   BEGIN
-SELECT COUNT(*) AS likes_count FROM likes WHERE vacation_id = a_vacation_id;
+	SELECT COUNT(*) AS likes_count FROM likes WHERE vacation_id = a_vacation_id;
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `get_user` (IN `an_email` VARCHAR(50), IN `a_password` VARCHAR(128))   BEGIN
@@ -74,8 +68,8 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `get_user` (IN `an_email` VARCHAR(50
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `is_email_exists` (IN `an_email` VARCHAR(30))   BEGIN
-		SELECT COUNT(*) FROM users WHERE email = an_email;
-	END$$
+	SELECT COUNT(*) FROM users WHERE email = an_email;
+END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `like_vacation` (`userId` INT(11), `vacationId` INT(11))   BEGIN
    IF (SELECT EXISTS(SELECT * FROM likes WHERE user_id = userId AND vacation_id = vacationId)) THEN
@@ -86,13 +80,12 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `like_vacation` (`userId` INT(11), `
 END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `remove_vacation` (IN `vacation_id` INT(11))   BEGIN
-    	DELETE FROM vacations WHERE id = vacation_id;
-    END$$
+	DELETE FROM vacations WHERE id = vacation_id;
+END$$
 
 CREATE DEFINER=`root`@`localhost` PROCEDURE `update_vacation` (IN `an_id` INT(11), IN `a_country_id` VARCHAR(50), IN `a_description` VARCHAR(500), IN `a_start_date` DATE, IN `an_end_date` DATE, IN `a_price` FLOAT(7,2), IN `an_image` VARCHAR(50))   BEGIN
 -- Update vacation
-
-		UPDATE vacations SET country_id = a_country_id, description = a_description, start_date = a_start_date, end_date = an_end_date, price = a_price, image = an_image, description = a_description, start_date = a_start_date, end_date = an_end_date, price = a_price, image = an_image WHERE id = an_id;
+	UPDATE vacations SET country_id = a_country_id, description = a_description, start_date = a_start_date, end_date = an_end_date, price = a_price, image = an_image, description = a_description, start_date = a_start_date, end_date = an_end_date, price = a_price, image = an_image WHERE id = an_id;
 END$$
 
 DELIMITER ;
@@ -102,12 +95,15 @@ DELIMITER ;
 --
 -- Table structure for table `countries`
 --
+-- Creation: Oct 21, 2026 at 01:29 PM
+-- Last update: Oct 21, 2026 at 01:29 PM
+--
 
 CREATE TABLE IF NOT EXISTS `countries` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- RELATIONSHIPS FOR TABLE `countries`:
@@ -134,77 +130,10 @@ INSERT INTO `countries` (`id`, `name`) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `django_admin_log`
---
-
-CREATE TABLE IF NOT EXISTS `django_admin_log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `action_time` datetime(6) NOT NULL,
-  `object_id` longtext DEFAULT NULL,
-  `object_repr` varchar(200) NOT NULL,
-  `action_flag` smallint(5) UNSIGNED NOT NULL CHECK (`action_flag` >= 0),
-  `change_message` longtext NOT NULL,
-  `content_type_id` int(11) DEFAULT NULL,
-  `user_id` bigint(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `django_admin_log_content_type_id_c4bce8eb_fk_django_co` (`content_type_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
---
--- RELATIONSHIPS FOR TABLE `django_admin_log`:
---   `content_type_id`
---       `django_content_type` -> `id`
---
-
--- --------------------------------------------------------
-
---
--- Table structure for table `django_content_type`
---
-
-CREATE TABLE IF NOT EXISTS `django_content_type` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(100) NOT NULL,
-  `app_label` varchar(100) NOT NULL,
-  `model` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `django_content_type_app_label_model_76bd3d3b_uniq` (`app_label`,`model`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
---
--- RELATIONSHIPS FOR TABLE `django_content_type`:
---
-
--- --------------------------------------------------------
-
---
--- Table structure for table `django_migrations`
---
-
-CREATE TABLE IF NOT EXISTS `django_migrations` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `app` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `applied` datetime(6) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
---
--- RELATIONSHIPS FOR TABLE `django_migrations`:
---
-
---
--- Dumping data for table `django_migrations`
---
-
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES
-(1, 'members', '0001_initial', '2024-05-29 22:32:21.305493'),
-(2, 'contenttypes', '0001_initial', '2024-05-29 22:32:21.363779');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `likes`
+--
+-- Creation: Oct 21, 2026 at 01:32 PM
+-- Last update: Oct 21, 2026 at 01:32 PM
 --
 
 CREATE TABLE IF NOT EXISTS `likes` (
@@ -212,14 +141,10 @@ CREATE TABLE IF NOT EXISTS `likes` (
   `vacation_id` int(11) NOT NULL,
   PRIMARY KEY (`user_id`,`vacation_id`),
   KEY `vacation_id` (`vacation_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- RELATIONSHIPS FOR TABLE `likes`:
---   `user_id`
---       `users` -> `id`
---   `vacation_id`
---       `vacations` -> `id`
 --
 
 --
@@ -236,12 +161,15 @@ INSERT INTO `likes` (`user_id`, `vacation_id`) VALUES
 --
 -- Table structure for table `roles`
 --
+-- Creation: Oct 21, 2026 at 01:41 PM
+-- Last update: Oct 21, 2026 at 01:41 PM
+--
 
 CREATE TABLE IF NOT EXISTS `roles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `role_type` varchar(20) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- RELATIONSHIPS FOR TABLE `roles`:
@@ -260,6 +188,9 @@ INSERT INTO `roles` (`id`, `role_type`) VALUES
 --
 -- Table structure for table `users`
 --
+-- Creation: Oct 21, 2026 at 01:44 PM
+-- Last update: Oct 21, 2026 at 01:44 PM
+--
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -271,12 +202,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `role_id` (`role_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- RELATIONSHIPS FOR TABLE `users`:
---   `role_id`
---       `roles` -> `id`
 --
 
 --
@@ -284,15 +213,18 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
-(1, 'Adam', 'Adams', 'adams@mail.com', '5d4e49d6c86556048c6d55708ee4b084b715dda6763223874245de496a55aed3b420b19d0f562e63e63648ad585098ce77df82607c77b413af9e1e31c20600ed', 1),
-(2, 'John', 'Johnson', 'johnson@mail.com', '5d4e49d6c86556048c6d55708ee4b084b715dda6763223874245de496a55aed3b420b19d0f562e63e63648ad585098ce77df82607c77b413af9e1e31c20600ed', 2),
-(9, 'Joe', 'Doe', 'joe@mail.com', '5d4e49d6c86556048c6d55708ee4b084b715dda6763223874245de496a55aed3b420b19d0f562e63e63648ad585098ce77df82607c77b413af9e1e31c20600ed', 2),
-(10, 'Avi', 'Ron', 'avi@email.com', '5d4e49d6c86556048c6d55708ee4b084b715dda6763223874245de496a55aed3b420b19d0f562e63e63648ad585098ce77df82607c77b413af9e1e31c20600ed', 2);
+(1, 'Adam', 'Adams', 'adams@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 1),
+(2, 'John', 'Johnson', 'johnson@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2),
+(9, 'Joe', 'Doe', 'joe@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2),
+(10, 'Avi', 'Ron', 'avi@email.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2);
 
 -- --------------------------------------------------------
 
 --
 -- Table structure for table `vacations`
+--
+-- Creation: Oct 21, 2026 at 01:45 PM
+-- Last update: Oct 21, 2026 at 01:45 PM
 --
 
 CREATE TABLE IF NOT EXISTS `vacations` (
@@ -305,12 +237,10 @@ CREATE TABLE IF NOT EXISTS `vacations` (
   `image` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `country_id` (`country_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- RELATIONSHIPS FOR TABLE `vacations`:
---   `country_id`
---       `countries` -> `id`
 --
 
 --
@@ -330,35 +260,6 @@ INSERT INTO `vacations` (`id`, `country_id`, `description`, `start_date`, `end_d
 (10, 1, 'Discover the allure of Crete, the largest Greek island, where ancient myths intertwine with stunning landscapes. Explore Minoan ruins at Knossos, wander through charming villages with whitewashed houses, and relax on pristine beaches kissed by the Mediterranean sun. With a blend of rich history, warm hospitality, and breathtaking scenery, Crete invites you to experience a vacation that is both timeless and unforgettable.', '2024-05-03', '2024-03-14', 7500.00, 'Crete.jpg'),
 (11, 10, 'Savor the enchantment of Paris, where iconic landmarks like the Eiffel Tower and Louvre Museum grace the cityscape. Stroll along the Seine River, indulge in delectable pastries at charming cafés, and immerse yourself in art and history. With its romantic ambiance, world-class cuisine, and timeless charm, Paris is an exquisite tapestry of culture and sophistication, promising a vacation filled with unforgettable moments.', '2024-05-17', '2024-05-18', 3500.00, 'Paris.jpg'),
 (12, 7, 'Escape to the South Island, a pristine haven where snow-capped peaks, turquoise lakes, and lush fjords create a breathtaking landscape. Explore the adventure capital of Queenstown, cruise through Milford Sound\'s majestic fiords, and hike amid the Southern Alps. With its diverse scenery, outdoor adventures, and warm Kiwi hospitality, the South Island offers a vacation that\'s a symphony of nature\'s wonders.', '2024-01-10', '2024-01-17', 9500.00, 'SouthIsland.jpg');
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `django_admin_log`
---
-ALTER TABLE `django_admin_log`
-  ADD CONSTRAINT `django_admin_log_content_type_id_c4bce8eb_fk_django_co` FOREIGN KEY (`content_type_id`) REFERENCES `django_content_type` (`id`);
-
---
--- Constraints for table `likes`
---
-ALTER TABLE `likes`
-  ADD CONSTRAINT `likes_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `likes_ibfk_2` FOREIGN KEY (`vacation_id`) REFERENCES `vacations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
-
---
--- Constraints for table `vacations`
---
-ALTER TABLE `vacations`
-  ADD CONSTRAINT `vacations_ibfk_1` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

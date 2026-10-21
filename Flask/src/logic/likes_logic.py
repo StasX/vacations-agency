@@ -5,6 +5,17 @@ class LikesLogic:
         self.dal = DAL()
 
     def like(self, user_id, vacation_id):
-        sql = "CALL like_vacation(%s,%s)"
-        params = (user_id, vacation_id)
-        return self.dal.insert(sql, params)
+        # Check if like already exists
+        check_sql = "SELECT COUNT(*) as cnt FROM likes WHERE user_id=%s AND vacation_id=%s"
+        result = self.dal.get_scalar(check_sql, (user_id, vacation_id))
+        
+        if result and result['cnt'] > 0:
+            # Like exists, delete it
+            sql = "DELETE FROM likes WHERE user_id=%s AND vacation_id=%s"
+            params = (user_id, vacation_id)
+            return self.dal.delete(sql, params)
+        else:
+            # Like doesn't exist, insert it
+            sql = "INSERT INTO likes (user_id, vacation_id) VALUES (%s, %s)"
+            params = (user_id, vacation_id)
+            return self.dal.insert(sql, params)

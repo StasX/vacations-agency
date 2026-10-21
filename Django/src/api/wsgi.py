@@ -13,4 +13,27 @@ from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.settings')
 
-application = get_wsgi_application()
+django_application = get_wsgi_application()
+
+
+def application(environ, start_response):
+    """WSGI application that ensures responses are properly rendered"""
+    
+    # Call Django app
+    app_iter = django_application(environ, start_response)
+    
+    # Check if it's a TemplateResponse and render it
+    try:
+        # Render TemplateResponse if needed
+        if hasattr(app_iter, 'render'):
+            app_iter.render()
+    except Exception as e:
+        print(f"Error rendering response: {e}")
+    
+    # Ensure all parts of the response are properly iterated
+    try:
+        for data in app_iter:
+            yield data
+    finally:
+        if hasattr(app_iter, 'close'):
+            app_iter.close()

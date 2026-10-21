@@ -8,8 +8,29 @@ class VacationsLogic:
         self.dal = DAL()
 
     def get_all_vacations(self, user_id):
-        sql = "CALL get_all_vacations(%s)"
-        params = (user_id, )
+        sql = """SELECT 
+                    vacations.id AS id,
+                    countries.name,
+                    vacations.description,
+                    vacations.start_date,
+                    vacations.end_date,
+                    vacations.price,
+                    vacations.image,
+                    COUNT(likes.vacation_id) AS likes_count,
+                    CASE WHEN EXISTS(SELECT 1 FROM likes WHERE likes.vacation_id=vacations.id AND likes.user_id=%s) THEN 1 ELSE 0 END AS liked
+                FROM vacations 
+                CROSS JOIN countries ON vacations.country_id = countries.id 
+                LEFT JOIN likes ON vacations.id = likes.vacation_id
+                GROUP BY
+                    vacations.id,
+                    countries.name,
+                    vacations.description,
+                    vacations.start_date,
+                    vacations.end_date,
+                    vacations.price,
+                    vacations.image
+                ORDER BY vacations.start_date"""
+        params = (user_id,)
         return self.dal.get_table(sql, params)
     
     def get_one_vacation(self, id):
@@ -21,7 +42,7 @@ class VacationsLogic:
         # Add image
         image_name = ImageHandler.save_image(vacation.image)
         # Add vacation
-        sql = "CALL add_vacation(%s,%s,%s,%s,%s,%s)"
+        sql = "INSERT INTO vacations(country_id, description, start_date, end_date, price, image) VALUES (%s, %s, %s, %s, %s, %s)"
         params = (vacation.country, vacation.description, vacation.start_date,
                   vacation.end_date, vacation.price, image_name)
         last_row_id = self.dal.insert(sql, params)
@@ -29,11 +50,11 @@ class VacationsLogic:
     def update_vacation(self, vacation):
         # Update image
         old_image = self.get_old_image_name(vacation.id)
-        image_name = ImageHandler.update_image(old_image,vacation.image)
+        image_name = ImageHandler.update_image(old_image, vacation.image)
         # Update vacation
-        sql = "CALL update_vacation(%s,%s,%s,%s,%s,%s,%s)"
-        params = (vacation.id, vacation.country, vacation.description,
-                  vacation.start_date, vacation.end_date, vacation.price, image_name)
+        sql = "UPDATE vacations SET country_id = %s, description = %s, start_date = %s, end_date = %s, price = %s, image = %s WHERE id = %s"
+        params = (vacation.country, vacation.description,
+                  vacation.start_date, vacation.end_date, vacation.price, image_name, vacation.id)
         row_count = self.dal.update(sql, params)
 
     def delete_vacation(self, id):
@@ -41,16 +62,15 @@ class VacationsLogic:
         old_image = self.get_old_image_name(id)
         ImageHandler.delete_image(old_image)
         # Delete vacation
-        sql = "CALL remove_vacation(%s)"
+        sql = "DELETE FROM vacations WHERE id = %s"
         params = (id,)
         row_count = self.dal.delete(sql, params)
 
-    def get_old_image_name(self,id):
+    def get_old_image_name(self, id):
         sql = "SELECT image FROM vacations WHERE id=%s"
         params = (id,)
-        old_image_name=self.dal.get_scalar(sql,params)
+        old_image_name = self.dal.get_scalar(sql, params)
         return old_image_name["image"]
-
 
     def close(self):
         self.dal.close()

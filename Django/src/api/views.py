@@ -1,7 +1,6 @@
-from rest_framework.response import Response
-from django.http import HttpResponse
-from rest_framework.decorators import api_view
-from rest_framework import status
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
 from utils.app_config import AppConfig
 from django.contrib.auth import authenticate
 import jwt
@@ -15,17 +14,31 @@ JWT_ERRORS = (ExpiredSignatureError, InvalidTokenError, DecodeError, InvalidSign
               InvalidAudienceError, InvalidIssuerError, ImmatureSignatureError, MissingRequiredClaimError, PyJWTError)
 
 
-@api_view(["POST"])
-def login(request):
+def health_check(request):
+    """Health check endpoint - returns plain JSON"""
+    if request.method == 'GET':
+        return JsonResponse({"status": "OK"})
+    return JsonResponse({"error": "Method not allowed"}, status=405)
 
+
+@csrf_exempt
+def login(request):
+    """Login endpoint"""
+    if request.method != 'POST':
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
     try:
+        data = json.loads(request.body)
+        email = data.get("email")
+        password = data.get("password")
+        
         credentials = {
-            "username": request.data["email"],
-            "password": request.data["password"],
+            "username": email,
+            "password": password,
         }
-        user = authenticate(**credentials)
+        user = authenticate(request, **credentials)
         if not user:
-            return Response({"error": "Wrong credentials"}, status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({"error": "Wrong credentials"}, status=400)
         # Set access payload
         access_payload = {
             'type': 'access',
@@ -52,47 +65,52 @@ def login(request):
             access_payload, key=AppConfig.secret_key, algorithm="HS256")
         refresh_token = jwt.encode(
             refresh_payload, key=AppConfig.secret_key, algorithm="HS256")
-        # Create response
-        response = HttpResponse(access_token)
+        # Create response with plain JSON
+        response = JsonResponse({"access_token": access_token}, status=200)
         response.set_cookie(key="refresh", value=refresh_token,
                             httponly=True, secure=True, samesite="lax", max_age=60*60)
         return response
     except Exception as err:
-        return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"error": str(err)}, status=500)
 
 
 # -------------------------------------------------------
 
 
-@api_view(["DELETE"])
+@csrf_exempt
 def logout(request):
-    # Every one can logout.
-    # It just remove tokens if they exists
+    """Logout endpoint"""
+    if request.method != 'DELETE':
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
     try:
-        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response = JsonResponse({}, status=204)
         # remove the cookies if exists
         cookie = request.COOKIES.get("refresh")
         if cookie:
             response.delete_cookie("refresh")
         return response
     except JWT_ERRORS:
-        return HttpResponse(status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse({"error": "Bad Request"}, status=400)
     except Exception as err:
-        return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"error": str(err)}, status=500)
 
 
 # -------------------------------------------------------
 
 
-@api_view(["GET"])
+@csrf_exempt
 def refresh_token(request):
-    # Refresh tokens if refresh token exists
+    """Refresh token endpoint"""
+    if request.method != 'GET':
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+    
     try:
         # remove the cookie if exists
         refresh_cookie = request.COOKIES.get("refresh")
         # If cookie not exists user unauthorized
         if not refresh_cookie:
-            return HttpResponse(status=status.HTTP_401_UNAUTHORIZED)
+            return JsonResponse({"error": "Unauthorized"}, status=401)
         header_data = jwt.get_unverified_header(refresh_cookie)
         decoded = jwt.decode(refresh_cookie, AppConfig.secret_key,
                              audience=AppConfig.audience,  algorithms=[header_data["alg"]])
@@ -113,20 +131,26 @@ def refresh_token(request):
         # Create tokens
         access_token = jwt.encode(
             access_payload, key=AppConfig.secret_key, algorithm="HS256")
-        refresh_token = jwt.encode(
+        refresh_token_new = jwt.encode(
             refresh_payload, key=AppConfig.secret_key, algorithm="HS256")
-        # Create response
-        response = HttpResponse(access_token)
-        response.set_cookie(key="refresh", value=refresh_token,
+        # Create response with plain JSON
+        response = JsonResponse({"access_token": access_token}, status=200)
+        response.set_cookie(key="refresh", value=refresh_token_new,
                             httponly=True, secure=True, samesite="lax", max_age=60*60*10)
         return response
     except JWT_ERRORS as err:
         print("------------------------------------------------------")
         print(err)
         print("------------------------------------------------------")
-        return HttpResponse(status=status.HTTP_401_UNAUTHORIZED)
+        return JsonResponse({"error": "Unauthorized"}, status=401)
     except Exception as err:
         print("------------------------------------------------------")
         print(err)
         print("------------------------------------------------------")
-        return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse({"error": str(err)}, status=500)
+
+
+@csrf_exempt
+def catch_all(request):
+    """Catch-all view for unmatched routes"""
+    return JsonResponse({"error": "Not Found"}, status=404)

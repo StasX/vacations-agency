@@ -8,7 +8,9 @@ class AuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             user = UserModel.objects.get(email=username)
-            if Security.hash(password) == user.password and user.role.role_type == "Admin":
+            # Check password matches
+            if Security.hash(password) == user.password:
                 return user
+            return None
         except UserModel.DoesNotExist:
             return None

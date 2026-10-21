@@ -3,6 +3,7 @@ from .app_config import AppConfig
 
 
 class Security:
+    @staticmethod
     def hash(plain_text):
         encoded_text = plain_text.encode(
             "UTF-8") + AppConfig.passwords_salt.encode("UTF-8")

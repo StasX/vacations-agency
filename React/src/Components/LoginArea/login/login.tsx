@@ -18,7 +18,12 @@ export function Login(): JSX.Element {
             navigate("/home");
         }
         catch (err: any) {
-            const text = (err.response.status === 400) ? "You can't login with this credentials." : "Something went wrong. Please try again.";
+            let text = "Something went wrong. Please try again.";
+            if (err?.response?.status === 400) {
+                text = "You can't login with this credentials.";
+            } else if (!err?.response) {
+                text = "Unable to reach the server. Please check your connection.";
+            }
             setErrorText(text);
             setIsError(true);
         }

@@ -25,33 +25,32 @@ def fix_response_middleware(get_response):
 def auth_middleware(get_response):
 
     def middleware(request):
-        try:
-            # Skip auth check for these paths
-            public_paths = ["/", "/api/auth/login", "/api/auth/refresh-token", "/api/auth/logout"]
+        # Skip auth check for these paths
+        public_paths = ["/", "/api/auth/login", "/api/auth/refresh-token", "/api/auth/logout"]
+        
+        if request.path not in public_paths:
+            token = request.headers.get("Authorization")
+            if not token:
+                return JsonResponse({"error": "Unauthorized"}, status=401)
             
-            if request.path not in public_paths:
-                token = request.headers.get("Authorization")
-                if not token:
-                    return JsonResponse({"error": "Unauthorized"}, status=401)
+            try:
                 header_data = jwt.get_unverified_header(token)
                 decoded = jwt.decode(
                     token, AppConfig.secret_key, audience=AppConfig.audience, algorithms=[header_data["alg"]])
                 # Check if token type is access
                 if decoded.get("type") != "access":
                     return JsonResponse({"error": "Unauthorized"}, status=401)
-            
-            response = get_response(request)
-            return response
-        except ExpiredSignatureError as err:
-            # Token expired and user should try to refresh it
-            refresh_cookie = request.COOKIES.get("refresh")
-            if not refresh_cookie:
+            except ExpiredSignatureError:
+                refresh_cookie = request.COOKIES.get("refresh")
+                if not refresh_cookie:
+                    return JsonResponse({"error": "Unauthorized"}, status=401)
+                return JsonResponse({"error": "Token expired, refresh required"}, status=406)
+            except JWT_ERRORS:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
-            return JsonResponse({"error": "Token expired, refresh required"}, status=406)
-        except JWT_ERRORS as err:
-            # Token invalid
-            return JsonResponse({"error": "Unauthorized"}, status=401)
-        except Exception as err:
-            return JsonResponse({"error": str(err)}, status=500)
+            except Exception as err:
+                return JsonResponse({"error": str(err)}, status=500)
+        
+        response = get_response(request)
+        return response
 
     return middleware

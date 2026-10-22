@@ -16,10 +16,10 @@ class UserService {
     }
 
     public async login(credentials: CredentialsModel): Promise<void> {
-        const response = await axios.post<string>(appConfig.loginUrl, credentials, {
+        const response = await axios.post<{ access_token: string }>(appConfig.loginUrl, credentials, {
             withCredentials: true,
         });
-        const token = (await response).data;
+        const token = response.data.access_token;
         if (!token) return;
         const action = userActions.login(jwtDecode<{ user: UserModel }>(token).user);
         store.dispatch(action);
@@ -34,10 +34,10 @@ class UserService {
     }
     public async refreshToken(): Promise<void> {
         try {
-            const response = await axios.get<string>(appConfig.refreshUrl, {
+            const response = await axios.get<{ access_token: string }>(appConfig.refreshUrl, {
                 withCredentials: true,
             });
-            const token = (await response).data;
+            const token = response.data.access_token;
             const action = userActions.login(jwtDecode<{ user: UserModel }>(token).user);
             store.dispatch(action);
             localStorage.setItem("token", token);

@@ -17,8 +17,8 @@ class StatisticsService {
         if (!this.token) return;
 
         try {
-            const response = await axios.get(appConfig.usersCountUrl, { withCredentials: true, headers: { "Authorization": `Bearer ${this.token}` } });
-            const action = usersCalcActions.members((await response).data);
+            const response = await axios.get(appConfig.usersCountUrl, { withCredentials: true, headers: { "Authorization": this.token } });
+            const action = usersCalcActions.members(response.data);
             store.dispatch(action);
         } catch (err: any) {
             if (err?.response?.status === 406 && this.canRefreshToken) {
@@ -34,8 +34,8 @@ class StatisticsService {
         this.token = localStorage.getItem("token");
         if (!this.token) return;
         try {
-            const response = await axios.get(appConfig.vacationsStatisticsUrl, { withCredentials: true, headers: { "Authorization": `Bearer ${this.token}` } });
-            const action = vacationsStatActions.vacationsStats((await response).data);
+            const response = await axios.get(appConfig.vacationsStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });
+            const action = vacationsStatActions.vacationsStats(response.data);
             store.dispatch(action);
         } catch (err: any) {
             if (err?.response?.status === 406 && this.canRefreshToken) {
@@ -51,8 +51,8 @@ class StatisticsService {
         this.token = localStorage.getItem("token");
         if (!this.token) return;
         try {
-            const response = await axios.get(appConfig.likesCountUrl, { withCredentials: true, headers: { "Authorization": `Bearer ${this.token}` } });
-            const data = (await response).data;
+            const response = await axios.get(appConfig.likesCountUrl, { withCredentials: true, headers: { "Authorization": this.token } });
+            const data = response.data;
             const action = likesCalcActions.liked(data);
             store.dispatch(action);
         } catch (err: any) {
@@ -69,8 +69,8 @@ class StatisticsService {
         this.token = localStorage.getItem("token");
         if (!this.token) return;
         try {
-            const response = await axios.get(appConfig.likesStatisticsUrl, { withCredentials: true, headers: { "Authorization": `Bearer ${this.token}` } });
-            const data = (await response).data;
+            const response = await axios.get(appConfig.likesStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });
+            const data = response.data;
             const action = likesStatActions.likedStats(data);
             store.dispatch(action);
         } catch (err: any) {

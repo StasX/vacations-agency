@@ -7,40 +7,40 @@ function validateCountry() {
 }
 function validateStartDate() {
     const startDateBox = document.querySelector("#startDate");
-    const startDate = new Date(startDateBox.value);
+    const startDate = new Date(startDateBox.value + "T00:00:00");
     const dateNow = new Date();
-    // I assume that user can start and end the vacation in current day
-    const msg = (startDate < dateNow) ? "Start date should be in future." : "";
+    dateNow.setHours(0, 0, 0, 0);
+    const msg = startDate < dateNow ? "Start date can't be in the past." : "";
     startDateBox.setCustomValidity(msg);
-    // Revalidate end date
     validateEndDate();
 }
+
 function validateEndDate() {
     const startDateBox = document.querySelector("#startDate");
-    const startDate = new Date(startDateBox.value);
     const endDateBox = document.querySelector("#endDate");
-    const endDate = new Date(endDateBox.value);
-    const msg = (endDate < startDate) ? "End date can't be before start date." : "";
+    const startDate = new Date(startDateBox.value + "T00:00:00");
+    const endDate = new Date(endDateBox.value + "T00:00:00");
+    const msg = endDate < startDate ? "End date can't be before start date." : "";
     endDateBox.setCustomValidity(msg);
 }
+
 // Add / Edit vacation form validation
 function validateVacationForm(event) {
     event.preventDefault();
-    const countryId = document.querySelector("#countryBox").value;
-    if (validateCountry(countryId)) {
-        validateForm(event);
-    } else {
-        // Show modal window
+    validateStartDate();
+    if (!validateCountry()) {
         showModal({
             title: '<i class="fa-solid fa-triangle-exclamation"></i>',
-            text: "Please choice country"
+            text: "Please choose a country"
         });
+        return;
     }
+    validateForm(event);
 }
 
 // Validate any form
 function validateForm(event) {
-    if (event.target.checkValidity()) {
+    if (event.target.reportValidity()) {
         event.target.submit();
     }
 }
@@ -61,7 +61,7 @@ function displayImage() {
     if (file && /^image\/\w+$/.test(file.type)) {
         reader.readAsDataURL(file);
         // Change "Add button text"
-        document.querySelector("imgBtnTxt").innerText="Change image";
+        document.querySelector("imgBtnTxt").innerText = "Change image";
     }
 }
 
@@ -132,21 +132,28 @@ function selectCountry(name, id) {
     validateCountry()
 }
 
-
-
 window.onload = () => {
-    // Set two decimal places after the point
     const priceBox = document.getElementById("priceBox");
     if (priceBox) {
         if (priceBox.value) {
             priceBox.value = parseFloat(priceBox.value).toFixed(2);
         }
-        priceBox.onblur = () => { if (priceBox.value) priceBox.value = parseFloat(priceBox.value).toFixed(2); }
+        priceBox.onblur = () => {
+            if (priceBox.value) {
+                priceBox.value = parseFloat(priceBox.value).toFixed(2);
+            }
+        };
     }
+    const form = document.querySelector("#vacationForm");
+    if (form) {
+        const startDateBox = document.querySelector("#startDate");
+        const endDateBox = document.querySelector("#endDate");
 
-    // Run validations when form loaded"
-    if (document.querySelector("#vacationForm")) {
+        startDateBox.addEventListener("change", validateStartDate);
+        endDateBox.addEventListener("change", validateEndDate);
+
+        form.addEventListener("submit", validateVacationForm);
+
         validateStartDate();
-        validateEndDate();
     }
-}
+};

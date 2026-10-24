@@ -1,5 +1,5 @@
 export class VacationsStatisticsModel {
-    public future_vacations: number;
-    public on_going_vacations: number;
-    public past_vacations: number;
+    public future_vacations: number = 0;
+    public on_going_vacations: number = 0;
+    public past_vacations: number = 0;
 }

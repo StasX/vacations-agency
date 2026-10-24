@@ -61,7 +61,6 @@ export function Login(): JSX.Element {
                         margin="normal"
                         required
                         fullWidth
-                        name="password"
                         label="Password"
                         type="password"
                         id="password"

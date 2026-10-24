@@ -12,7 +12,7 @@ export function login(currentState: UserModel, action: PayloadAction<UserModel>)
 }
 // Logout
 export function logout(currentState: UserModel, action: PayloadAction): UserModel {
-    return null;
+    return new UserModel();
 }
 // Users count
 export function members(currentState: TotalUsersModel, action: PayloadAction<TotalUsersModel>): TotalUsersModel {

@@ -1,5 +1,5 @@
 export class ChartModel {
-    public value: number;
-    public label: string;
-    public color: string;
+    public value: number = 0;
+    public label: string = "";
+    public color: string = "";
 }

@@ -1,5 +1,5 @@
-import { configureStore, createSlice } from "@reduxjs/toolkit";
-import { liked, likedStats, login, logout, members, vacationsStats } from "./reducers";
+import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { liked, login, logout, members, vacationsStats } from "./reducers";
 import { UserModel } from "../Models/UserModel";
 import { TotalLikesModel } from "../Models/TotalLikesModel";
 import { TotalUsersModel } from "../Models/TotalUsersModel";
@@ -16,32 +16,38 @@ export type AppState = {
 
 const userSlice = createSlice({
     name: "user",
-    initialState: null,
+    initialState: new UserModel(),
     reducers: { login, logout }
 });
 
 const usersCalcSlice = createSlice({
     name: "usersCalc",
-    initialState: null,
+    initialState: new TotalUsersModel(),
     reducers: { members }
 });
 
 const likesCalcSlice = createSlice({
     name: "likesCalc",
-    initialState: null,
+    initialState: new TotalLikesModel(),
     reducers: { liked }
 });
 
 const vacationsStatSlice = createSlice({
     name: "vacationsStat",
-    initialState: null,
+    initialState: new VacationsStatisticsModel(),
     reducers: { vacationsStats }
 });
+
 const likesStatSlice = createSlice({
     name: "likesStat",
-    initialState: [],
-    reducers: { likedStats }
+    initialState: [] as LikesStatisticsModel[],
+    reducers: {
+        likedStats(state, action: PayloadAction<LikesStatisticsModel[]>) {
+            return action.payload;
+        }
+    }
 });
+
 export const userActions = userSlice.actions;
 export const usersCalcActions = usersCalcSlice.actions;
 export const likesCalcActions = likesCalcSlice.actions;

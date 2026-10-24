@@ -5,7 +5,7 @@ import { likesCalcActions, likesStatActions, store, usersCalcActions, vacationsS
 import { notify } from "../Utils/Notify";
 
 class StatisticsService {
-    protected token: string;
+    protected token: string = "";
     protected canRefreshToken: boolean;
     protected canGoToLogin: boolean;
     public constructor() {
@@ -13,7 +13,7 @@ class StatisticsService {
         this.canGoToLogin = true;
     }
     public async getUsersCount(): Promise<void> {
-        this.token = localStorage.getItem("token");
+        this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
 
         try {
@@ -31,7 +31,7 @@ class StatisticsService {
         }
     }
     public async getVacationsStatistics(): Promise<void> {
-        this.token = localStorage.getItem("token");
+        this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
         try {
             const response = await axios.get(appConfig.vacationsStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });
@@ -48,7 +48,7 @@ class StatisticsService {
         }
     }
     public async getLikesCount(): Promise<void> {
-        this.token = localStorage.getItem("token");
+        this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
         try {
             const response = await axios.get(appConfig.likesCountUrl, { withCredentials: true, headers: { "Authorization": this.token } });
@@ -66,7 +66,7 @@ class StatisticsService {
         }
     }
     public async getLikesStatistics(): Promise<void> {
-        this.token = localStorage.getItem("token");
+        this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
         try {
             const response = await axios.get(appConfig.likesStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });

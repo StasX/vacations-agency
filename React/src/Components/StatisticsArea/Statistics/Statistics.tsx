@@ -68,9 +68,9 @@ export function Statistics(): JSX.Element {
                             series={[
                                 {
                                     data: [
-                                        { value: vacationsStatistics?.past_vacations, label: `Vacations that over (${vacationsStatistics?.past_vacations})`, color: "#0787E3" },
-                                        { value: vacationsStatistics?.on_going_vacations, label: `On going vacations (${vacationsStatistics?.on_going_vacations})`, color: "#406CE5" },
-                                        { value: vacationsStatistics?.future_vacations, label: `Future vacations. (${vacationsStatistics?.future_vacations})`, color: "#0742E3" },
+                                        { value: vacationsStatistics?.past_vacations ?? 0, label: `Vacations that over (${vacationsStatistics?.past_vacations ?? 0})`, color: "#0787E3" },
+                                        { value: vacationsStatistics?.on_going_vacations ?? 0, label: `On going vacations (${vacationsStatistics?.on_going_vacations ?? 0})`, color: "#406CE5" },
+                                        { value: vacationsStatistics?.future_vacations ?? 0, label: `Future vacations. (${vacationsStatistics?.future_vacations ?? 0})`, color: "#0742E3" },
                                     ],
                                 },
                             ]}

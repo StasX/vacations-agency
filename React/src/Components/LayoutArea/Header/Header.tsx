@@ -29,7 +29,7 @@ export function Header(): JSX.Element {
         try {
             await userService.logout();
             navigate("/login");
-            setName(null);
+            setName(undefined);
         } catch (err) {
                 notify.error();
         }

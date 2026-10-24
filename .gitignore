@@ -1,5 +1,9 @@
 env
 __pycache__
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
 node_modules
 server.old
 .vscode

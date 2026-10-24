@@ -1,7 +1,7 @@
 import os
 
 # Network
-bind = f"{os.getenv('APP_HOST', '0.0.0.0')}:8000"
+bind = f"{os.getenv('APP_HOST', '0.0.0.0')}:8000"  # nosec B104
 
 # Workers
 workers = int(os.getenv("GUNICORN_WORKERS", "2"))

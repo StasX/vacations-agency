@@ -4,6 +4,7 @@ __pycache__
 .coverage
 htmlcov/
 coverage.xml
+React/coverage/
 node_modules
 server.old
 .vscode

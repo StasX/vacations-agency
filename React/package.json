@@ -34,8 +34,15 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "jest --config jest.config.js",
+    "test:unit": "npm run test:ci -- --testPathPattern=tests/unit",
+    "test:integration": "npm run test:ci -- --testPathPattern=tests/integration",
+    "test:ci": "npm run test -- --watchAll=false --runInBand",
+    "test:coverage": "npm run test:ci -- --coverage",
     "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "jest": "27.5.1"
   },
   "eslintConfig": {
     "extends": [

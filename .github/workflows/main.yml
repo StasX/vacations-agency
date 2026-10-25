@@ -10,7 +10,8 @@ permissions:
 
 defaults:
   run:
-    shell: bash
+    # Preserve command failures when output is piped through tee.
+    shell: bash --noprofile --norc -eo pipefail {0}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

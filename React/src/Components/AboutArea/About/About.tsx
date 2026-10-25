@@ -1,12 +1,16 @@
+import type { JSX } from 'react';
 
 import { useTitle } from "../../../Hooks/useTitle";
-import { Container, Typography, List, ListItem, ListItemText, Grid } from "@mui/material";
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Grid from "@mui/material/Grid";
 import css from "./About.module.css";
-import { useRouteProtect } from "../../../Hooks/useRouteProtect";
 
 export function About(): JSX.Element {
     useTitle("About...");
-    useRouteProtect();
     const frontEndTech: string[] = [
         "React",
         "Bootstrap",

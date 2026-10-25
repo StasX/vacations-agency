@@ -3,6 +3,7 @@ import { appConfig } from "../Utils/AppConfig";
 import { userService } from "./UserService";
 import { likesCalcActions, likesStatActions, store, usersCalcActions, vacationsStatActions } from "../Redux/state";
 import { notify } from "../Utils/Notify";
+import type { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
 
 class StatisticsService {
     protected token: string = "";
@@ -69,8 +70,15 @@ class StatisticsService {
         this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
         try {
-            const response = await axios.get(appConfig.likesStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });
+            const response = await axios.get<unknown>(appConfig.likesStatisticsUrl, { withCredentials: true, headers: { "Authorization": this.token } });
             const data = response.data;
+            if (!Array.isArray(data) || !data.every((item): item is LikesStatisticsModel =>
+                item !== null && typeof item === "object" &&
+                typeof item.destination === "string" &&
+                typeof item.likes === "number" && Number.isFinite(item.likes)
+            )) {
+                throw new Error("Invalid likes statistics response");
+            }
             const action = likesStatActions.likedStats(data);
             store.dispatch(action);
         } catch (err: any) {

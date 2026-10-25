@@ -12,8 +12,8 @@ npm run test:coverage   # run once and generate coverage/
 ```
 
 On PowerShell systems that block `npm.ps1`, use `npm.cmd` instead of `npm`.
-The suite uses Jest 27 and React Testing Library. `jest.config.js` reuses CRA's
-TypeScript, JSX, CSS, and asset transforms, with test discovery outside `src`.
+The suite uses Jest 29, Babel, and React Testing Library 16.
+TypeScript and JSX use Babel; CSS and assets use local mocks.
 No running Django API, database, Docker containers, or external network is needed.
 
 ## Directory layout
@@ -61,13 +61,11 @@ Jest transpiles TypeScript; it does not run the TypeScript compiler.
 
 ## Regression tests
 
-All tests assert correct behavior, including paths that currently contain bugs.
-There are no expected-failure wrappers or skipped bug tests. Currently five
-regressions fail: logout cookie options, malformed-token startup, refresh retry
-timing, delayed statistics rendering, and header timer cleanup. These tests will
-pass automatically when the corresponding production bugs are fixed.
+All tests assert expected application behavior; none are skipped. The upgrade
+verification runs all 67 tests: 56 pass and 11 fail in existing application
+behavior (empty session state, cookie options, malformed saved tokens, refresh
+retry timing, delayed statistics, and header timer cleanup).
 
-Existing CRA dependency and React Testing Library deprecation warnings may appear.
-The shared `React/tsconfig.json` includes both `src` and `tests`. Run
-`npx tsc --noEmit` from `React` to check both. Existing application type errors
-currently prevent that check from passing; this is independent of Jest.
+Redux serializability warnings may appear for existing model instances.
+The shared tsconfig.json includes src and tests. Run npx tsc --noEmit to
+check both. Jest uses Babel to transpile TypeScript.

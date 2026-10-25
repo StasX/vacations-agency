@@ -1,45 +1,37 @@
-import { useEffect, useState } from "react";
-import { useRouteProtect } from "../../../Hooks/useRouteProtect";
+import { useEffect, useMemo, useSyncExternalStore, type JSX } from "react";
 import { useTitle } from "../../../Hooks/useTitle";
 import { statisticsService } from "../../../Services/StatisticsService";
-import { Card, CardContent, Grid, Typography } from "@mui/material";
-import { PieChart } from "@mui/x-charts";
-import { store } from "../../../Redux/state";
-import { TotalUsersModel } from "../../../Models/TotalUsersModel";
-import { TotalLikesModel } from "../../../Models/TotalLikesModel";
-import { VacationsStatisticsModel } from "../../../Models/VacationsStatisticsModel";
-import { ChartModel } from "../../../Models/ChartModel";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import { PieChart } from "@mui/x-charts/PieChart";
+import { store, type AppState } from "../../../Redux/state";
+import type { ChartModel } from "../../../Models/ChartModel";
+import type { LikesStatisticsModel } from "../../../Models/LikesStatisticsModel";
 
+const colors = ["#E64B2F", "#E67640", "#E37507", "#E34E07", "#E63C4A", "#E6D3B1", "#E6A840", "#E6852E", "#E5C66D", "#E39107", "#E66F3C", "#E6DFB1"];
+const getStatisticsState = (): AppState => store.getState();
 
 export function Statistics(): JSX.Element {
     useTitle("Statistics");
-    useRouteProtect();
 
-    const [members, setMembers] = useState<TotalUsersModel>();
-    const [likes, setLikes] = useState<TotalLikesModel>();
-    const [vacationsStatistics, setVacationsStatistics] = useState<VacationsStatisticsModel>();
-    const [likesStatistics, setLikesStatistics] = useState<ChartModel[]>([]);
+    const { usersCalc: members, likesCalc: likes, vacationsStat: vacationsStatistics, likesStat } =
+        useSyncExternalStore<AppState>(store.subscribe, getStatisticsState);
+    const likesStatistics = useMemo<ChartModel[]>(() => {
+        const statistics: LikesStatisticsModel[] = Array.isArray(likesStat) ? likesStat : [];
+        return statistics.map((item: LikesStatisticsModel, index: number) => ({
+            value: item.likes,
+            label: `${item.destination} (${item.likes})`,
+            color: colors[index % colors.length],
+        }));
+    }, [likesStat]);
+
     useEffect(() => {
-        const colors: string[] = ["#E64B2F", "#E67640", "#E37507", "#E34E07", "#E63C4A", "#E6D3B1", "#E6A840", "#E6852E", "#E5C66D", "#E39107", "#E66F3C", "#E6DFB1",];
-        const statsService = statisticsService;
-        statsService.getUsersCount();
-        statsService.getLikesCount();
-        statsService.getVacationsStatistics();
-        statsService.getLikesStatistics();
-        setTimeout(() => {
-            setMembers(store.getState().usersCalc);
-            setLikes(store.getState().likesCalc);
-            setVacationsStatistics(store.getState().vacationsStat);
-            const likesStats = store.getState().likesStat;
-            const stats = likesStats.map((item, index) => {
-                return {
-                    value: item.likes,
-                    label: `${item.destination} (${item.likes})`,
-                    color: colors[index],
-                };
-            });
-            setLikesStatistics(stats);
-        }, 1000);
+        void statisticsService.getUsersCount();
+        void statisticsService.getLikesCount();
+        void statisticsService.getVacationsStatistics();
+        void statisticsService.getLikesStatistics();
     }, []);
 
     return (
@@ -48,7 +40,7 @@ export function Statistics(): JSX.Element {
                 <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ mb: 5 }}>Members count:</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{members?.total_users}</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{members?.total_users ?? 0}</Typography>
                     </CardContent>
                 </Card>
             </Grid>
@@ -56,7 +48,7 @@ export function Statistics(): JSX.Element {
                 <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ mb: 5 }}>Likes count:</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{likes?.total_likes}</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{likes?.total_likes ?? 0}</Typography>
                     </CardContent>
                 </Card>
             </Grid>

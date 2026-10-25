@@ -1,7 +1,7 @@
 import { jwtDecode } from "jwt-decode";
-import { UserModel } from "../Models/UserModel";
+import type { UserModel } from "../Models/UserModel";
 import { store, userActions } from "../Redux/state";
-import { CredentialsModel } from "../Models/CredentialsModel";
+import type { CredentialsModel } from "../Models/CredentialsModel";
 import axios from "axios";
 import { appConfig } from "../Utils/AppConfig";
 

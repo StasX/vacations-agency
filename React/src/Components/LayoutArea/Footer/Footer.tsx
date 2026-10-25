@@ -1,5 +1,6 @@
+import type { JSX } from 'react';
 import { useState, useEffect } from "react";
-import { Typography } from "@mui/material";
+import Typography from "@mui/material/Typography";
 
 export function Footer(): JSX.Element {
     const [year, setYear] = useState<number>(2024);

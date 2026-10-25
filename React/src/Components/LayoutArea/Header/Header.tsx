@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -5,8 +6,8 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
-import logo from "../../../Assets/img/logo.png"
-import { Grid } from '@mui/material';
+import logo from "../../../Assets/img/logo.png?url";
+import Grid from '@mui/material/Grid';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { useEffect, useState } from 'react';
 import { store } from '../../../Redux/state';
@@ -28,7 +29,7 @@ export function Header(): JSX.Element {
     async function logout() {
         try {
             await userService.logout();
-            navigate("/login");
+            navigate("/login", { replace: true });
             setName(undefined);
         } catch (err) {
                 notify.error();

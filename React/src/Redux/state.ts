@@ -1,10 +1,10 @@
-import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { configureStore, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { liked, login, logout, members, vacationsStats } from "./reducers";
 import { UserModel } from "../Models/UserModel";
 import { TotalLikesModel } from "../Models/TotalLikesModel";
 import { TotalUsersModel } from "../Models/TotalUsersModel";
 import { VacationsStatisticsModel } from "../Models/VacationsStatisticsModel";
-import { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
+import type { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
 
 export type AppState = {
     user: UserModel;

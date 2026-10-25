@@ -1,11 +1,13 @@
-import stat from "../../../Assets/img/stat.png"
+import type { JSX } from 'react';
+import stat from "../../../Assets/img/stat.png?url";
 import { useTitle } from "../../../Hooks/useTitle";
-import { useRouteProtect } from "../../../Hooks/useRouteProtect";
-import { Box, Container, Grid, Typography } from "@mui/material";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
 
 export function Home(): JSX.Element {
     useTitle("Home");
-    useRouteProtect();
     return (
         <Container maxWidth="xl" sx={{ mt: 5 }}>
             <Typography variant="h3">Explanation about the system.</Typography>

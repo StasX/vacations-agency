@@ -1,9 +1,15 @@
+import type { JSX } from 'react';
 import { useForm } from "react-hook-form";
 import { useTitle } from "../../../Hooks/useTitle";
-import { CredentialsModel } from "../../../Models/CredentialsModel";
+import type { CredentialsModel } from "../../../Models/CredentialsModel";
 import { useNavigate } from "react-router-dom";
 import { userService } from "../../../Services/UserService";
-import { TextField, Button, Container, Typography, Box, Alert } from "@mui/material";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
 import { useState } from "react";
 
 export function Login(): JSX.Element {
@@ -15,7 +21,7 @@ export function Login(): JSX.Element {
     async function send(credentials: CredentialsModel) {
         try {
             await userService.login(credentials);
-            navigate("/home");
+            navigate("/home", { replace: true });
         }
         catch (err: any) {
             let text = "Something went wrong. Please try again.";

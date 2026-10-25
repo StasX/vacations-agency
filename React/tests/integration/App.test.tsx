@@ -1,6 +1,6 @@
-import React, { act } from 'react';
+import { act, type ReactNode } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useNavigate, useNavigationType } from 'react-router-dom';
 import { Login } from '../../src/Components/LoginArea/login/login';
 import { Routing } from '../../src/Components/LayoutArea/Routing/Routing';
 import { Header } from '../../src/Components/LayoutArea/Header/Header';
@@ -31,18 +31,18 @@ jest.mock('../../src/Services/StatisticsService', () => ({ statisticsService: {
     getUsersCount: jest.fn(), getLikesCount: jest.fn(), getVacationsStatistics: jest.fn(), getLikesStatistics: jest.fn(),
 } }));
 jest.mock('../../src/Utils/Notify', () => ({ notify: { error: jest.fn() } }));
-jest.mock('@mui/x-charts', () => ({ PieChart: ({ series }: { series: { data: unknown[] }[] }) => <div data-testid="chart">{JSON.stringify(series[0].data)}</div> }));
+jest.mock('@mui/x-charts/PieChart', () => ({ PieChart: ({ series }: { series: { data: unknown[] }[] }) => <div data-testid="chart">{JSON.stringify(series[0].data)}</div> }));
 
 const admin = { id: 1, firstName: 'Ada', lastName: 'Lovelace', email: 'ada@example.com', role: 'Admin' };
-const at = (component: React.ReactNode, path = '/') => render(<MemoryRouter initialEntries={[path]}>{component}</MemoryRouter>);
+const at = (component: ReactNode, path = '/') => render(<MemoryRouter initialEntries={[path]}>{component}</MemoryRouter>);
 
 beforeEach(() => {
     jest.resetAllMocks();
     jest.useFakeTimers();
     store.dispatch(userActions.logout(undefined));
-    store.dispatch(usersCalcActions.members(null));
-    store.dispatch(likesCalcActions.liked(null));
-    store.dispatch(vacationsStatActions.vacationsStats(null));
+    store.dispatch(usersCalcActions.members({ total_users: 0 }));
+    store.dispatch(likesCalcActions.liked({ total_likes: 0 }));
+    store.dispatch(vacationsStatActions.vacationsStats({ past_vacations: 0, on_going_vacations: 0, future_vacations: 0 }));
     store.dispatch(likesStatActions.likedStats([]));
 });
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
@@ -79,15 +79,52 @@ test.each([
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
 });
 
-test.each(['/home', '/statistics', '/about'])('anonymous users visiting %s are redirected to login', async (path) => {
+test.each(['/', '/home', '/statistics', '/about'])('anonymous users visiting %s are redirected to login', async (path) => {
     at(<Routing />, path);
     expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument();
+});
+
+test('routing redirects signed-in admins away from login', () => {
+    store.dispatch(userActions.login(admin));
+    at(<Routing />, '/login');
+    expect(screen.getByRole('heading', { name: 'Explanation about the system.' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sign in/i })).not.toBeInTheDocument();
 });
 
 test('non-admin users are redirected to login', async () => {
     store.dispatch(userActions.login({ ...admin, role: 'User' }));
     at(<Routing />, '/statistics');
     expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument();
+});
+
+test('unauthorized statistics visits never start protected requests', () => {
+    at(<Routing />, '/statistics');
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    Object.values(statisticsService).forEach(method => expect(method).not.toHaveBeenCalled());
+});
+
+test('losing admin access redirects an already mounted protected route', () => {
+    store.dispatch(userActions.login(admin));
+    at(<Routing />, '/home');
+    expect(screen.getByRole('heading', { name: 'Explanation about the system.' })).toBeInTheDocument();
+    act(() => { store.dispatch(userActions.login({ ...admin, role: 'User' })); });
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Explanation about the system.' })).not.toBeInTheDocument();
+});
+
+test('unauthorized redirects replace the protected entry in browser history', () => {
+    function HistoryControls() {
+        const navigate = useNavigate();
+        const navigationType = useNavigationType();
+        return <><span data-testid="navigation-type">{navigationType}</span><button onClick={() => navigate(-1)}>Back</button></>;
+    }
+    render(<MemoryRouter initialEntries={['/missing', '/statistics']}>
+        <HistoryControls /><Routing />
+    </MemoryRouter>);
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByTestId('navigation-type')).toHaveTextContent('REPLACE');
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(screen.getByRole('heading', { name: 'Page not found!' })).toBeInTheDocument();
 });
 
 test.each([

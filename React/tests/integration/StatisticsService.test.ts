@@ -63,6 +63,17 @@ test.each(endpoints)('%s notifies on network failure', async (method) => {
     expect(notify.error).toHaveBeenCalledTimes(1);
 });
 
+test.each([null, {}, { data: [] }, [{ destination: 'Rome', likes: '7' }], [null]])(
+    'invalid likes statistics do not replace the chart array: %p', async (data) => {
+        localStorage.setItem('token', 'access-token');
+        const previous = store.getState().likesStat;
+        jest.mocked(axios.get).mockResolvedValue({ data });
+        await statisticsService.getLikesStatistics();
+        expect(store.getState().likesStat).toBe(previous);
+        expect(notify.error).toHaveBeenCalledTimes(1);
+    }
+);
+
 test('simultaneous expired responses trigger one refresh and retry all endpoints', async () => {
     localStorage.setItem('token', 'expired');
     jest.mocked(axios.get).mockRejectedValue({ response: { status: 406 } });

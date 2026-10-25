@@ -1,9 +1,9 @@
-import { PayloadAction } from "@reduxjs/toolkit";
+import type { PayloadAction } from "@reduxjs/toolkit";
 import { UserModel } from "../Models/UserModel";
-import { TotalLikesModel } from "../Models/TotalLikesModel";
-import { TotalUsersModel } from "../Models/TotalUsersModel";
-import { VacationsStatisticsModel } from "../Models/VacationsStatisticsModel";
-import { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
+import type { TotalLikesModel } from "../Models/TotalLikesModel";
+import type { TotalUsersModel } from "../Models/TotalUsersModel";
+import type { VacationsStatisticsModel } from "../Models/VacationsStatisticsModel";
+import type { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
 
 // Login and Token Refresh
 export function login(currentState: UserModel, action: PayloadAction<UserModel>): UserModel {

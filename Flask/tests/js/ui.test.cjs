@@ -162,7 +162,7 @@ for (const file of [undefined, { type: 'text/plain' }]) {
     });
 }
 
-test('image preview updates source and button text', { todo: 'displayImage selects imgBtnTxt without the # prefix' }, () => {
+test('image preview updates source and button text', () => {
     const { context, elements, fileInput } = setup();
     fileInput.files = [{ type: 'image/png' }];
     context.displayImage();

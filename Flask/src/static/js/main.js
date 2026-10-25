@@ -61,7 +61,7 @@ function displayImage() {
     if (file && /^image\/\w+$/.test(file.type)) {
         reader.readAsDataURL(file);
         // Change "Add button text"
-        document.querySelector("imgBtnTxt").innerText = "Change image";
+        document.querySelector("#imgBtnTxt").innerText = "Change image";
     }
 }
 

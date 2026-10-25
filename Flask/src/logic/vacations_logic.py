@@ -45,26 +45,37 @@ class VacationsLogic:
         sql = "INSERT INTO vacations(country_id, description, start_date, end_date, price, image) VALUES (%s, %s, %s, %s, %s, %s)"
         params = (vacation.country, vacation.description, vacation.start_date,
                   vacation.end_date, vacation.price, image_name)
-        last_row_id = self.dal.insert(sql, params)
+        try:
+            self.dal.insert(sql, params)
+        except Exception:
+            ImageHandler.delete_image(image_name)
+            raise
 
     def update_vacation(self, vacation):
         # Update image
         old_image = self.get_old_image_name(vacation.id)
-        image_name = ImageHandler.update_image(old_image, vacation.image)
+        image_name = ImageHandler.save_image(vacation.image) or old_image
         # Update vacation
         sql = "UPDATE vacations SET country_id = %s, description = %s, start_date = %s, end_date = %s, price = %s, image = %s WHERE id = %s"
         params = (vacation.country, vacation.description,
                   vacation.start_date, vacation.end_date, vacation.price, image_name, vacation.id)
-        row_count = self.dal.update(sql, params)
+        try:
+            self.dal.update(sql, params)
+        except Exception:
+            if image_name != old_image:
+                ImageHandler.delete_image(image_name)
+            raise
+        if image_name != old_image:
+            ImageHandler.delete_image(old_image)
 
     def delete_vacation(self, id):
         # Delete image
         old_image = self.get_old_image_name(id)
-        ImageHandler.delete_image(old_image)
         # Delete vacation
         sql = "DELETE FROM vacations WHERE id = %s"
         params = (id,)
         row_count = self.dal.delete(sql, params)
+        ImageHandler.delete_image(old_image)
 
     def get_old_image_name(self, id):
         sql = "SELECT image FROM vacations WHERE id=%s"

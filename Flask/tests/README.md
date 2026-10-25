@@ -40,16 +40,11 @@ Known defects are executable regression tests marked as strict expected failures
 - Invalid edit submissions use incorrect country column names during recovery.
 - Malformed dates and prices raise `ValueError` instead of validation errors.
 - Missing vacation records do not return 404.
-- Editing without an image field fails instead of preserving the image.
-- Non-image uploads are accepted by the server.
 - Request-created database connections are not closed.
-
-The JavaScript image-preview case is a Node `todo` test: selecting `imgBtnTxt`
-without `#` raises a `TypeError`. The test executes and displays the failure.
 
 When fixing these defects, remove the corresponding `xfail` markers. Strict mode
 makes an unexpected pass fail the suite so a fix cannot silently leave a stale
-marker. Remove the JavaScript `todo` option when fixing its defect.
+marker.
 
 Coverage measures Python statements and branches; it includes code executed by
 expected-failure tests. The remaining uncovered Python code includes unreachable

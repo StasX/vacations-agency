@@ -8,6 +8,7 @@ from utils.logger import Logger
 from utils.csrf import init_csrf
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
 # Create session secret key:
 app.secret_key = AppConfig.session_secret_key

@@ -56,3 +56,11 @@ def sign_in(client):
             session["current_user"] = user
         return user
     return login
+
+
+def make_image(color="red", image_format="JPEG"):
+    from io import BytesIO
+    from PIL import Image
+    stream = BytesIO()
+    Image.new("RGB", (2, 2), color).save(stream, format=image_format)
+    return stream.getvalue()

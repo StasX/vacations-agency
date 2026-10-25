@@ -73,9 +73,10 @@ def test_vacation_update_parameters(app, monkeypatch):
     app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
     update_image = MagicMock(return_value="new.jpg")
     monkeypatch.setattr(
-        "logic.vacations_logic.ImageHandler.update_image", update_image)
+        "logic.vacations_logic.ImageHandler.save_image", update_image)
+    monkeypatch.setattr("logic.vacations_logic.ImageHandler.delete_image", MagicMock())
     VacationsLogic().update_vacation(vacation)
-    update_image.assert_called_once_with("old.jpg", image)
+    update_image.assert_called_once_with(image)
     sql, params = app.test_dal.update.call_args.args
     assert vacation.description not in sql
     assert params == ("1", vacation.description, "2099-01-01",

@@ -54,6 +54,8 @@ services:
     image: sm1986/vacations-catalog:1.0
     build: ./Flask 
     container_name: vacations-catalog
+    volumes:
+      - vacation-images:/app/static/images/vacations
     environment:
       MYSQL_HOST: vacations-database
       MYSQL_USER: ${MYSQL_USER}
@@ -83,4 +85,5 @@ services:
 # List of all volumes: 
 volumes:
   vacations-volume:
+  vacation-images:
 

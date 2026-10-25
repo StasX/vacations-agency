@@ -1,3 +1,5 @@
+from conftest import make_image
+from PIL import Image
 from datetime import date, datetime
 from hashlib import sha512
 from io import BytesIO
@@ -10,8 +12,8 @@ from utils.security import Security
 from utils.app_config import AppConfig
 
 
-def upload(name="photo.jpg", contents=b"image"):
-    return FileStorage(stream=BytesIO(contents), filename=name)
+def upload(name="photo.jpg", contents=None):
+    return FileStorage(stream=BytesIO(make_image() if contents is None else contents), filename=name)
 
 
 def test_dates():
@@ -63,7 +65,7 @@ def test_save_image_unique_names_and_safe_basename(app, image_directory):
     assert first != second
     assert "/" not in first and "\\" not in first
     assert first.endswith(".jpg")
-    assert (image_directory / first).read_bytes() == b"image"
+    assert (image_directory / first).read_bytes() == make_image()
 
 
 def test_empty_upload_keeps_existing_image(app, image_directory):
@@ -79,16 +81,16 @@ def test_update_replaces_image(app, image_directory):
     old = image_directory / "old.jpg"
     old.write_bytes(b"old")
     with app.app_context():
-        name = ImageHandler.update_image("old.jpg", upload(contents=b"new"))
+        name = ImageHandler.update_image("old.jpg", upload(contents=make_image("blue")))
     assert not old.exists()
-    assert (image_directory / name).read_bytes() == b"new"
+    assert (image_directory / name).read_bytes() == make_image("blue")
 
 
 def test_failed_save_preserves_old_image(app, image_directory, monkeypatch):
     old = image_directory / "old.jpg"
     old.write_bytes(b"old")
     image = upload()
-    monkeypatch.setattr(image, "save", lambda path: (
+    monkeypatch.setattr(Image.Image, "save", lambda *args, **kwargs: (
         _ for _ in ()).throw(OSError("disk full")))
     with app.app_context(), pytest.raises(OSError):
         ImageHandler.update_image(old.name, image)

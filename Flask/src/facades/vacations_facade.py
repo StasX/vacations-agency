@@ -51,7 +51,7 @@ class VacationsFacade:
         start_date = request.form.get("start_date")
         end_date = request.form.get("end_date")
         price = request.form.get("price")
-        image = request.files["image"]
+        image = request.files.get("image")
         vacation = VacationModel(
             id, country, description, start_date, end_date, price, image)
         error = vacation.validate_update()

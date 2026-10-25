@@ -155,6 +155,12 @@ docker compose down
 
 > **Warning:** `docker compose down -v` also removes persistent volumes, including database data.
 
+## Image Uploads
+
+Vacation uploads accept JPEG, PNG, and WebP files up to 5 MB and 20 million
+pixels. Flask verifies and re-encodes their contents before saving them. Docker
+Compose persists vacation images in the `vacation-images` named volume.
+
 ## Password Storage
 
 Flask and Django share PBKDF2-SHA256 password hashes with 1,000,000 iterations

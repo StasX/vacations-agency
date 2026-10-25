@@ -1,3 +1,4 @@
+from conftest import make_image
 from datetime import date
 from io import BytesIO
 import pytest
@@ -63,12 +64,12 @@ def test_admin_add_saves_uploaded_image(client, app, sign_in, tmp_path, monkeypa
     image_dir.mkdir(parents=True)
     response = client.post("/vacations/add", data=dict(
         country="1", description="Rome holiday", start_date="2099-01-01",
-        end_date="2099-01-02", price="100", image=(BytesIO(b"test image"), "rome.jpg"),
+        end_date="2099-01-02", price="100", image=(BytesIO(make_image()), "rome.jpg"),
     ))
     assert response.status_code == 302
     params = app.test_dal.insert.call_args.args[1]
     assert params[:3] == ("1", "Rome holiday", "2099-01-01")
-    assert (image_dir / params[-1]).read_bytes() == b"test image"
+    assert (image_dir / params[-1]).read_bytes() == make_image()
 
 
 def test_admin_delete_removes_record_and_image(client, app, sign_in, tmp_path, monkeypatch):

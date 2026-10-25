@@ -1,3 +1,4 @@
+from conftest import make_image
 from datetime import date
 from io import BytesIO
 from unittest.mock import MagicMock
@@ -105,7 +106,7 @@ def test_admin_edit_keeps_or_replaces_image(client, app, sign_in, image_director
     old = image_directory / "old.jpg"
     old.write_bytes(b"old")
     app.test_dal.get_scalar.return_value = {"image": old.name}
-    data = form(image=(BytesIO(b"new" if replace else b""),
+    data = form(image=(BytesIO(make_image() if replace else b""),
                 "new.jpg" if replace else ""))
     response = client.post("/vacations/12/edit", data=data)
     assert response.status_code == 302 and response.location == "/vacations"
@@ -114,7 +115,7 @@ def test_admin_edit_keeps_or_replaces_image(client, app, sign_in, image_director
     assert params[-1] == 12
     assert old.exists() == (not replace)
     assert (image_directory /
-            params[-2]).read_bytes() == (b"new" if replace else b"old")
+            params[-2]).read_bytes() == (make_image() if replace else b"old")
 
 
 @pytest.mark.parametrize("signed_in", [False, True])
@@ -172,7 +173,6 @@ def test_missing_vacation_returns_404(client, app, sign_in, monkeypatch, path):
     assert response.status_code == 404
 
 
-@pytest.mark.xfail(strict=True, reason="Missing multipart image field becomes a generic error during edit")
 def test_edit_without_image_field_preserves_image(client, app, sign_in, monkeypatch):
     sign_in(1)
     app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
@@ -198,7 +198,6 @@ def test_add_without_csrf_token_is_rejected(client, app, sign_in, image_director
     app.test_dal.insert.assert_not_called()
 
 
-@pytest.mark.xfail(strict=True, reason="Uploaded files are not validated on the server")
 def test_non_image_upload_is_rejected(client, app, sign_in, image_directory):
     sign_in(1)
     app.test_dal.get_table.return_value = []

@@ -61,6 +61,6 @@ def test_registration_forces_user_role_and_hashes_password(client, app):
 
 def test_logout_clears_session(client, sign_in):
     sign_in()
-    assert client.get("/logout").status_code == 302
+    assert client.post("/logout").status_code == 302
     with client.session_transaction() as session:
         assert not session

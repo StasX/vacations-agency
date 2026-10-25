@@ -16,7 +16,7 @@
                         <div class="welcome-user">Welcome: <span class="user-name">{{ user.first_name }} {{
                                 user.last_name
                                 }}</span></div>
-                        <div><a href="{{ url_for('auth_view.logout') }}" class="logout">Logout</a></div>
+                        {% include "logout_form.html" %}
                     </div>
                     <div class="ico-container"><i class="fa-solid fa-user user-ico"></i></div>
                 </div>

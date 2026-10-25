@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from facades.auth_facade import AuthFacade
 from models.client_errors import ValidationError, AuthError
 
@@ -31,8 +31,7 @@ def register():
         return render_template("register.html", error=err.message, user=err.model)
 
 
-@auth_blueprint.route("/logout")
+@auth_blueprint.route("/logout", methods=["POST"])
 def logout():
-    auth_facade = AuthFacade()
-    auth_facade.logout()
+    session.clear()
     return redirect(url_for("auth_view.login"))

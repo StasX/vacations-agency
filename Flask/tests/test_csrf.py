@@ -94,3 +94,23 @@ def test_user_like_form_requires_post_and_csrf(client, app, sign_in, liked):
     operation = app.test_dal.delete if liked else app.test_dal.insert
     operation.assert_called_once()
     assert operation.call_args.args[1] == (7, 12)
+
+
+@pytest.mark.parametrize("role", [1, 2])
+def test_logout_requires_post_and_valid_token(client, app, sign_in, role):
+    sign_in(role)
+    app.test_dal.get_table.return_value = []
+    page = client.get("/vacations")
+    assert b'method="post" action="/logout"' in page.data
+    token = re.search(rb'name="csrf_token" value="([^"]+)"', page.data).group(1).decode()
+    assert client.get("/logout").status_code == 405
+    for data in ({}, {"csrf_token": "forged"}):
+        assert client.post("/logout", data=data).status_code == 400
+        with client.session_transaction() as session:
+            assert session["current_user"]["id"] == 7
+    response = client.post("/logout", data={"csrf_token": token})
+    assert response.status_code == 302
+    assert response.location == "/login"
+    with client.session_transaction() as session:
+        assert not session
+    assert client.get("/vacations").location == "/login"

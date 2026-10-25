@@ -32,14 +32,17 @@ def test_invalid_date_conversion(value):
         DateHandler.to_date(value)
 
 
-def test_security_hash_uses_salt_and_utf8(monkeypatch):
-    monkeypatch.setattr(AppConfig, "passwords_salt", "test-salt")
-    assert Security.hash("pässword") == sha512(
-        "pässwordtest-salt".encode()).hexdigest()
-    assert Security.hash("other") != Security.hash("pässword")
-    first = Security.hash("pässword")
-    monkeypatch.setattr(AppConfig, "passwords_salt", "other-salt")
-    assert Security.hash("pässword") != first
+def test_security_hash_uses_random_salt_and_utf8(monkeypatch):
+    password = "p\u00e4ssword"
+    first = Security.hash(password)
+    second = Security.hash(password)
+    assert first != second
+    assert Security.verify(password, first)
+    assert Security.verify(password, second)
+    assert not Security.verify("wrong", first)
+    assert len(first) <= 128
+    monkeypatch.setattr(AppConfig, "passwords_salt", "changed")
+    assert Security.verify(password, first)
 
 
 def test_logger_appends_timestamp_and_exception(tmp_path, monkeypatch):

@@ -212,11 +212,12 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Dumping data for table `users`
 --
 
+-- Demo accounts use Abc123 with independently salted PBKDF2 hashes. Do not use in production.
 INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password`, `role_id`) VALUES
-(1, 'Adam', 'Adams', 'adams@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 1),
-(2, 'John', 'Johnson', 'johnson@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2),
-(9, 'Joe', 'Doe', 'joe@mail.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2),
-(10, 'Avi', 'Ron', 'avi@email.com', 'bb182ebb0c316ccb3d88eabbd4157cb19b74ad65ad6fde26db190753803ec9fe52a657f92a52590fc2e76c74fd058b50f9e28827fdca8205002c2d493558e0e4', 2);
+(1, 'Adam', 'Adams', 'adams@mail.com', 'pbkdf2_sha256$1000000$n5bXKtbj65cNYcq_kwVvhw$bcDQbUFn0zuTJ9rkl7yzVPhz9UIWRH/nuC+zXR2yDRU=', 1),
+(2, 'John', 'Johnson', 'johnson@mail.com', 'pbkdf2_sha256$1000000$usJzEcAnP6p7heubp0tY6g$qZSlONxVc8bcsiOMo1zCdfIHvrtZw2Hrj6VB/jPzXjo=', 2),
+(9, 'Joe', 'Doe', 'joe@mail.com', 'pbkdf2_sha256$1000000$5RppEi2GSZ5p1BGSRW8ERw$aKpx07osXwvplCjrbEn2P6mFvyOsMCKMrpO1YkVCQJk=', 2),
+(10, 'Avi', 'Ron', 'avi@email.com', 'pbkdf2_sha256$1000000$argOgHMRFtRakmG1NSKHAQ$guqdPPplV0xtdxZdIEekQdGyyrzGh5ir0NBiGAJkYf4=', 2);
 
 -- --------------------------------------------------------
 

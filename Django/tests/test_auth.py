@@ -113,13 +113,11 @@ def test_refresh_rejects_token_without_type(client, token_factory):
 
 
 @pytest.mark.parametrize('body', ['{', '[]', 'null'])
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='Known bug: invalid login JSON returns 500')
 def test_invalid_login_input_returns_400(client, body):
     assert client.post('/api/auth/login', body, content_type='application/json').status_code == 400
 
 
 @pytest.mark.django_db
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='Known bug: missing password returns 500')
 def test_missing_password_returns_400(client, user):
     response = client.post('/api/auth/login', {'email': user.email}, content_type='application/json')
     assert response.status_code == 400

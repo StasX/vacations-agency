@@ -1,6 +1,7 @@
 from datetime import date
 from io import BytesIO
 from unittest.mock import MagicMock
+from utils.security import Security
 
 import pytest
 
@@ -14,7 +15,7 @@ def form(**changes):
 
 def test_login_root_accepts_post(client, app):
     app.test_dal.get_scalar.return_value = dict(
-        id=7, first_name="Test", last_name="User", role=2, password="hash")
+        id=7, first_name="Test", last_name="User", role=2, password=Security.hash("Abc123"))
     response = client.post(
         "/", data={"email": "test@example.com", "password": "Abc123"})
     assert response.status_code == 302 and response.location == "/vacations"
@@ -152,7 +153,6 @@ def test_unexpected_exception_returns_500(client, app, sign_in, monkeypatch):
     assert client.get("/vacations").status_code == 500
 
 
-@pytest.mark.xfail(strict=True, reason="Likes route does not handle anonymous AuthError")
 def test_anonymous_like_redirects_without_mutation(client, app, monkeypatch):
     monkeypatch.setattr("app.Logger.write_log", lambda error: None)
     response = client.post("/likes/like/12")

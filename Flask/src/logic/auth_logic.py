@@ -13,10 +13,13 @@ class AuthLogic:
         return last_inserted_id
 
     def get_user(self, credentials):
-        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s AND password=%s"
-        params = (credentials.email, credentials.password)
+        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s"
+        params = (credentials.email,)
         user = self.dal.get_scalar(sql, params)
         return user
+
+    def update_password(self, user_id, password_hash):
+        return self.dal.update("UPDATE users SET password=%s WHERE id=%s", (password_hash, user_id))
 
     def is_email_exists(self, email):
         sql = "SELECT COUNT(*) FROM users WHERE email = %s"

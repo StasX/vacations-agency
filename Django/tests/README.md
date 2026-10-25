@@ -20,9 +20,10 @@ Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregat
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 
 Known defects are documented with strict `xfail` tests:
-malformed login input, vacation error status,
+vacation error status,
 and multiple likes per user. These appear as expected failures; once a defect is
 fixed, remove its marker (an unexpected pass fails the suite).
 
-Production source and existing placeholder `src/*/tests.py` files are unchanged.
+Password tests cover randomized hashing, shared Flask/Django compatibility,
+legacy hash upgrades, rejected passwords, and malformed hashes.
 Use pytest from this directory; `manage.py test` does not collect this suite.

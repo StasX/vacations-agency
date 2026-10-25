@@ -22,7 +22,7 @@ def test_auth_insert_and_lookup_are_parameterized(app):
     assert logic.get_user(CredentialsModel(user.email, "hash")) is row
     sql, params = app.test_dal.get_scalar.call_args.args
     assert user.email not in sql
-    assert params == (user.email, "hash")
+    assert params == (user.email,)
     logic.close()
     app.test_dal.close.assert_called_once_with()
 

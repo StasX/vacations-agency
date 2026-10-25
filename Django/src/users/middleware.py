@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from rest_framework import status
 from utils.app_config import AppConfig
+from utils.tokens import decode_token
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError, DecodeError, InvalidSignatureError, InvalidAudienceError, InvalidIssuerError, ImmatureSignatureError, MissingRequiredClaimError, PyJWTError
 
@@ -34,9 +35,7 @@ def auth_middleware(get_response):
                 return JsonResponse({"error": "Unauthorized"}, status=401)
             
             try:
-                header_data = jwt.get_unverified_header(token)
-                decoded = jwt.decode(
-                    token, AppConfig.secret_key, audience=AppConfig.audience, algorithms=[header_data["alg"]])
+                decoded = decode_token(token)
                 # Check if token type is access
                 if decoded.get("type") != "access":
                     return JsonResponse({"error": "Unauthorized"}, status=401)

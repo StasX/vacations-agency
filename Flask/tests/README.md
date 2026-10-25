@@ -39,7 +39,6 @@ Known defects are executable regression tests marked as strict expected failures
 
 - Invalid edit submissions use incorrect country column names during recovery.
 - Malformed dates and prices raise `ValueError` instead of validation errors.
-- Anonymous likes produce a generic error rather than redirecting to login.
 - Missing vacation records do not return 404.
 - Editing without an image field fails instead of preserving the image.
 - Non-image uploads are accepted by the server.

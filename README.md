@@ -155,7 +155,23 @@ docker compose down
 
 > **Warning:** `docker compose down -v` also removes persistent volumes, including database data.
 
+## Password Storage
+
+Flask and Django share PBKDF2-SHA256 password hashes with 1,000,000 iterations
+and a random salt for each password. Existing SHA-512 hashes are upgraded on
+successful login through either backend. Keep the existing `PASSWORDS_SALT`
+value until all legacy accounts have migrated; new hashes do not depend on it.
+Deploy both backends together so both can verify the new password format.
+
+The SQL seed contains demo accounts with password `Abc123`, including the demo
+admin. Each password uses an independently salted PBKDF2-SHA256 hash. These
+public demo credentials are for local demonstrations only; remove the demo
+accounts or change their passwords before production deployment.
+Seed changes apply only when MySQL initializes an empty data directory; existing
+database volumes require separate password resets for the old demo accounts.
+
 ## Possible Improvements
+
 
 - Serve the production React build with Nginx.
 - Move secrets and database credentials into environment variables.

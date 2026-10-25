@@ -19,11 +19,13 @@ class AuthFacade:
         error = credentials.validate()
         if error:
             raise ValidationError(error, credentials)
-        credentials.password = Security.hash(credentials.password)
         user = self.logic.get_user(credentials)
-        if not user:
+        if not user or not Security.verify(password, user["password"]):
             raise AuthError("Invalid email or password.", credentials)
+        if Security.needs_rehash(user["password"]):
+            self.logic.update_password(user["id"], Security.hash(password))
         del user["password"]
+        session.clear()
         session["current_user"] = user
 
     # Register
@@ -43,6 +45,7 @@ class AuthFacade:
         self.logic.add_user(user)
         user = self.logic.get_user(user)
         del user["password"]
+        session.clear()
         session["current_user"] = user
 
     def logout(self):

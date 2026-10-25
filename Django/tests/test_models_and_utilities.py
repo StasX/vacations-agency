@@ -16,15 +16,18 @@ from utils.security import Security
 @pytest.mark.parametrize('plain', ['', 'Password123!', 'pässword', 'שלום'])
 def test_password_hash_matches_shared_flask_format(monkeypatch, plain):
     monkeypatch.setattr(AppConfig, 'passwords_salt', 'test-salt')
-    assert Security.hash(plain) == sha512((plain+'test-salt').encode('utf-8')).hexdigest()
-    assert len(Security.hash(plain)) == 128
+    first = Security.hash(plain)
+    assert Security.verify(plain, first)
+    assert not Security.verify(plain + "wrong", first)
+    assert len(first) <= 128
 
 
-def test_password_salt_changes_hash(monkeypatch):
-    monkeypatch.setattr(AppConfig, 'passwords_salt', 'first')
+def test_password_salt_is_random_and_independent_of_legacy_salt(monkeypatch):
     first = Security.hash('password')
-    monkeypatch.setattr(AppConfig, 'passwords_salt', 'second')
     assert Security.hash('password') != first
+    monkeypatch.setattr(AppConfig, 'passwords_salt', 'changed')
+    assert Security.verify('password', first)
+
 
 
 @pytest.mark.django_db

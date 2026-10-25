@@ -70,8 +70,8 @@ def test_cors_preflight(client):
 ])
 def test_non_admin_cannot_read_statistics(client, token_factory, path, user):
     response = client.get(path, HTTP_AUTHORIZATION=token_factory(user=user))
-    assert response.status_code == 403
-    assert response.json() == {'error': 'Forbidden'}
+    assert response.status_code == (401 if user is None else 403)
+    assert response.json() == {'error': 'Unauthorized' if user is None else 'Forbidden'}
 
 
 @pytest.mark.django_db

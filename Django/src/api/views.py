@@ -2,9 +2,10 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from utils.app_config import AppConfig
+from utils.tokens import decode_token
 from django.contrib.auth import authenticate
 import jwt
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from users.models import UserModel
 from uuid import uuid4
 from jwt import ExpiredSignatureError, InvalidTokenError, DecodeError, InvalidSignatureError, InvalidAudienceError, InvalidIssuerError, ImmatureSignatureError, MissingRequiredClaimError, PyJWTError
@@ -28,9 +29,16 @@ def login(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
     
     try:
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except (ValueError, UnicodeError):
+            return JsonResponse({"error": "Invalid credentials"}, status=400)
+        if not isinstance(data, dict):
+            return JsonResponse({"error": "Invalid credentials"}, status=400)
         email = data.get("email")
         password = data.get("password")
+        if not isinstance(email, str) or not email.strip() or not isinstance(password, str) or not password:
+            return JsonResponse({"error": "Invalid credentials"}, status=400)
         
         credentials = {
             "username": email,
@@ -49,8 +57,8 @@ def login(request):
                 'email': user.email,
                 'role': user.role.role_type,
             },
-            'exp': datetime.utcnow() + timedelta(minutes=10),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now(timezone.utc) + timedelta(minutes=10),
+            'iat': datetime.now(timezone.utc),
             'iss': AppConfig.issuer,
             'aud': AppConfig.audience,
             'jti': str(uuid4())
@@ -59,7 +67,7 @@ def login(request):
         refresh_payload = access_payload.copy()
         refresh_payload["type"] = "refresh"
         refresh_payload["jti"] = str(uuid4())
-        refresh_payload["exp"] = datetime.utcnow() + timedelta(hours=1)
+        refresh_payload["exp"] = datetime.now(timezone.utc) + timedelta(hours=1)
         # Create tokens
         access_token = jwt.encode(
             access_payload, key=AppConfig.secret_key, algorithm="HS256")
@@ -111,24 +119,23 @@ def refresh_token(request):
         # If cookie not exists user unauthorized
         if not refresh_cookie:
             return JsonResponse({"error": "Unauthorized"}, status=401)
-        header_data = jwt.get_unverified_header(refresh_cookie)
-        decoded = jwt.decode(refresh_cookie, AppConfig.secret_key,
-                             audience=AppConfig.audience,  algorithms=[header_data["alg"]])
-        if decoded.get("type") != "refresh":
+        decoded = decode_token(refresh_cookie)
+        user = decoded.get("user")
+        if decoded.get("type") != "refresh" or not isinstance(user, dict) or not user.get("id"):
             return JsonResponse({"error": "Unauthorized"}, status=401)
 
         access_payload = decoded.copy()
         access_payload["type"] = "access"
-        access_payload["exp"] = datetime.utcnow() + timedelta(minutes=10)
-        access_payload["iat"] = datetime.utcnow()
+        access_payload["exp"] = datetime.now(timezone.utc) + timedelta(minutes=10)
+        access_payload["iat"] = datetime.now(timezone.utc)
         access_payload["iss"] = AppConfig.issuer
         access_payload["aud"] = AppConfig.audience
         access_payload["jti"] = str(uuid4())
 
         refresh_payload = access_payload.copy()
         refresh_payload["type"] = "refresh"
-        refresh_payload["exp"] = datetime.utcnow() + timedelta(hours=1)
-        refresh_payload["iat"] = datetime.utcnow()
+        refresh_payload["exp"] = datetime.now(timezone.utc) + timedelta(hours=1)
+        refresh_payload["iat"] = datetime.now(timezone.utc)
         refresh_payload["jti"] = str(uuid4())
         # Create tokens
         access_token = jwt.encode(
@@ -138,7 +145,7 @@ def refresh_token(request):
         # Create response with plain JSON
         response = JsonResponse({"access_token": access_token}, status=200)
         response.set_cookie(key="refresh", value=refresh_token_new,
-                            httponly=True, secure=True, samesite="lax", max_age=60*60*10)
+                            httponly=True, secure=True, samesite="lax", max_age=60*60)
         return response
     except JWT_ERRORS as err:
         print("------------------------------------------------------")

@@ -53,7 +53,6 @@ export const usersCalcActions = usersCalcSlice.actions;
 export const likesCalcActions = likesCalcSlice.actions;
 export const vacationsStatActions = vacationsStatSlice.actions;
 export const likesStatActions = likesStatSlice.actions;
-
 export const store = configureStore<AppState>({
     reducer: {
         user: userSlice.reducer,

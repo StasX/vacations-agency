@@ -1,10 +1,8 @@
 from datetime import date, datetime
 from hashlib import sha512
 from io import BytesIO
-
 import pytest
 from werkzeug.datastructures import FileStorage
-
 from utils.date_handler import DateHandler
 from utils.image_handler import ImageHandler
 from utils.logger import Logger
@@ -21,7 +19,8 @@ def test_dates():
     assert DateHandler.to_date("2028-02-29") == datetime(2028, 2, 29)
     before = datetime.now()
     assert before <= DateHandler.now() <= datetime.now()
-    value = {"start_date": date(2028, 2, 29), "end_date": date(2028, 3, 1), "id": 1}
+    value = {"start_date": date(2028, 2, 29),
+             "end_date": date(2028, 3, 1), "id": 1}
     assert DateHandler.format_vacation_dates(value) == {
         "start_date": "29/02/2028", "end_date": "01/03/2028", "id": 1,
     }
@@ -35,7 +34,8 @@ def test_invalid_date_conversion(value):
 
 def test_security_hash_uses_salt_and_utf8(monkeypatch):
     monkeypatch.setattr(AppConfig, "passwords_salt", "test-salt")
-    assert Security.hash("pässword") == sha512("pässwordtest-salt".encode()).hexdigest()
+    assert Security.hash("pässword") == sha512(
+        "pässwordtest-salt".encode()).hexdigest()
     assert Security.hash("other") != Security.hash("pässword")
     first = Security.hash("pässword")
     monkeypatch.setattr(AppConfig, "passwords_salt", "other-salt")
@@ -85,7 +85,8 @@ def test_failed_save_preserves_old_image(app, image_directory, monkeypatch):
     old = image_directory / "old.jpg"
     old.write_bytes(b"old")
     image = upload()
-    monkeypatch.setattr(image, "save", lambda path: (_ for _ in ()).throw(OSError("disk full")))
+    monkeypatch.setattr(image, "save", lambda path: (
+        _ for _ in ()).throw(OSError("disk full")))
     with app.app_context(), pytest.raises(OSError):
         ImageHandler.update_image(old.name, image)
     assert old.read_bytes() == b"old"
@@ -99,5 +100,6 @@ def test_delete_and_fallback(app, image_directory):
         ImageHandler.delete_image(image.name)
         ImageHandler.delete_image(image.name)
         ImageHandler.delete_image(None)
-        assert ImageHandler.get_image_path(image.name) == image_directory.parent / "no_photo.jpg"
+        assert ImageHandler.get_image_path(
+            image.name) == image_directory.parent / "no_photo.jpg"
     assert not image.exists()

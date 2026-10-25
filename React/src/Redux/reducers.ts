@@ -10,15 +10,18 @@ export function login(currentState: UserModel, action: PayloadAction<UserModel>)
     const newState = action.payload;
     return newState;
 }
+
 // Logout
 export function logout(currentState: UserModel, action: PayloadAction): UserModel {
     return new UserModel();
 }
+
 // Users count
 export function members(currentState: TotalUsersModel, action: PayloadAction<TotalUsersModel>): TotalUsersModel {
     const newState = action.payload;
     return newState;
 }
+
 // Likes count
 export function liked(currentState: TotalLikesModel, action: PayloadAction<TotalLikesModel>): TotalLikesModel {
     const newState = action.payload;
@@ -30,6 +33,7 @@ export function vacationsStats(currentState: VacationsStatisticsModel, action: P
     const newState = action.payload;
     return newState;
 }
+
 // Likes statistics
 export function likedStats(currentState: LikesStatisticsModel[], action: PayloadAction<LikesStatisticsModel[]>): LikesStatisticsModel[] {
     const newState = action.payload;

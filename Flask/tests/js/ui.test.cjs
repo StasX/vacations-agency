@@ -77,9 +77,11 @@ for (const valid of [false, true]) {
     test(`form submission respects browser validity: ${valid}`, () => {
         const { context } = setup();
         let submitted = false;
-        context.validateForm({ target: {
-            reportValidity: () => valid, submit: () => { submitted = true; },
-        } });
+        context.validateForm({
+            target: {
+                reportValidity: () => valid, submit: () => { submitted = true; },
+            }
+        });
         assert.equal(submitted, valid);
     });
 }
@@ -92,9 +94,11 @@ for (const country of ['', '1']) {
         elements.endDate.value = '2099-01-02';
         let prevented = false, submitted = false, modalShown = false;
         context.showModal = () => { modalShown = true; };
-        context.validateVacationForm({ preventDefault() { prevented = true; }, target: {
-            reportValidity: () => true, submit() { submitted = true; },
-        } });
+        context.validateVacationForm({
+            preventDefault() { prevented = true; }, target: {
+                reportValidity: () => true, submit() { submitted = true; },
+            }
+        });
         assert.equal(prevented, true);
         assert.equal(submitted, Boolean(country));
         assert.equal(modalShown, !country);
@@ -116,8 +120,10 @@ test('modal closes and restores scrolling', () => {
 test('confirmation modal wires action and cancel buttons', () => {
     const { context, elements, body, modal } = setup();
     let confirmed = false;
-    context.showModal({ title: 'Confirm', text: 'Delete?', showCancelBtn: true,
-        cancelBtnText: 'No', okBtnText: 'Yes', okBtnAction() { confirmed = true; } });
+    context.showModal({
+        title: 'Confirm', text: 'Delete?', showCancelBtn: true,
+        cancelBtnText: 'No', okBtnText: 'Yes', okBtnAction() { confirmed = true; }
+    });
     assert.match(body.html, />No<\/button>/);
     assert.match(body.html, />Yes<\/button>/);
     elements.ok.onclick();

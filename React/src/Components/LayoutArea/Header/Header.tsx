@@ -14,15 +14,11 @@ import { store } from '../../../Redux/state';
 import { userService } from '../../../Services/UserService';
 import { notify } from '../../../Utils/Notify';
 
-
-
 export function Header(): JSX.Element {
     const pages = [{ text: "Home", url: "/home" }, { text: "Statistics", url: "/statistics" }, { text: "About", url: "/about" }];
 
     const location = useLocation();
     const navigate = useNavigate();
-
-
     function handleNavigation(url: string) {
         navigate(url);
     };
@@ -35,6 +31,7 @@ export function Header(): JSX.Element {
                 notify.error();
         }
     }
+
     const [name, setName] = useState<string>();
     useEffect(() => {
         // Watch for user changes

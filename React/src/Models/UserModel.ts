@@ -5,3 +5,4 @@ export class UserModel {
     public email: string = "";
     public role: string = "";
 }
+

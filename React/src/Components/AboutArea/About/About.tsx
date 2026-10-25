@@ -1,5 +1,4 @@
 import type { JSX } from 'react';
-
 import { useTitle } from "../../../Hooks/useTitle";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -62,7 +61,6 @@ export function About(): JSX.Element {
                         ))}
                     </List>
                 </Grid>
-
                 <Grid item md={6} xs={12}>
                     <Typography variant="h6">Back End:</Typography>
                     <List>

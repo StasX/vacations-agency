@@ -16,7 +16,6 @@ class StatisticsService {
     public async getUsersCount(): Promise<void> {
         this.token = localStorage.getItem("token") || "";
         if (!this.token) return;
-
         try {
             const response = await axios.get(appConfig.usersCountUrl, { withCredentials: true, headers: { "Authorization": this.token } });
             const action = usersCalcActions.members(response.data);
@@ -26,7 +25,7 @@ class StatisticsService {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
                 this.goToLogin();
-            }else{
+            } else {
                 notify.error();
             }
         }
@@ -43,7 +42,7 @@ class StatisticsService {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
                 this.goToLogin();
-            }else{
+            } else {
                 notify.error();
             }
         }
@@ -61,7 +60,7 @@ class StatisticsService {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
                 this.goToLogin();
-            }else{
+            } else {
                 notify.error();
             }
         }
@@ -86,7 +85,7 @@ class StatisticsService {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
                 this.goToLogin();
-            }else{
+            } else {
                 notify.error();
             }
         }

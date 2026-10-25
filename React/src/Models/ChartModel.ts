@@ -3,3 +3,4 @@ export class ChartModel {
     public label: string = "";
     public color: string = "";
 }
+

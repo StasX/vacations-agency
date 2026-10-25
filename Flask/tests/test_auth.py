@@ -6,7 +6,8 @@ def test_login_stores_user_without_password(client, app):
         id=7, first_name="Test", last_name="User", email="test@example.com",
         password="hashed", role=2,
     )
-    response = client.post("/login", data={"email": "test@example.com", "password": "Abc123"})
+    response = client.post(
+        "/login", data={"email": "test@example.com", "password": "Abc123"})
     assert response.status_code == 302
     assert response.location == "/vacations"
     with client.session_transaction() as session:
@@ -18,7 +19,8 @@ def test_login_stores_user_without_password(client, app):
 
 def test_wrong_password_does_not_create_session(client, app):
     app.test_dal.get_scalar.return_value = None
-    response = client.post("/login", data={"email": "test@example.com", "password": "wrong"})
+    response = client.post(
+        "/login", data={"email": "test@example.com", "password": "wrong"})
     assert b"Invalid Email or Password." in response.data
     with client.session_transaction() as session:
         assert "current_user" not in session
@@ -42,7 +44,8 @@ def test_duplicate_registration_does_not_insert(client, app):
 def test_registration_forces_user_role_and_hashes_password(client, app):
     app.test_dal.get_scalar.side_effect = [
         {"COUNT(*)": 0},
-        dict(id=8, first_name="Test", last_name="User", email="test@example.com", password="hash", role=2),
+        dict(id=8, first_name="Test", last_name="User",
+             email="test@example.com", password="hash", role=2),
     ]
     response = client.post("/register", data=dict(
         first_name="Test", last_name="User", email="test@example.com", password="Abc123", role=1

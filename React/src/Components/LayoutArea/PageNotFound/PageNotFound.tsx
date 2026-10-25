@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import notFound from "../../../Assets/img/404.jpg?url";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
+
 export function PageNotFound(): JSX.Element {
     return (
         <Container maxWidth="xs" className={css.PageNotFound}>

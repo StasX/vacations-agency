@@ -34,7 +34,6 @@ export function Login(): JSX.Element {
             setIsError(true);
         }
     }
-
     return (
         <Container maxWidth="xs">
             <Box

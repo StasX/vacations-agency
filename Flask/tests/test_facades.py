@@ -1,6 +1,5 @@
 import pytest
 from flask import session
-
 from facades.auth_facade import AuthFacade
 from facades.likes_facade import LikesFacade
 from facades.vacations_facade import VacationsFacade

@@ -26,14 +26,12 @@ export function Statistics(): JSX.Element {
             color: colors[index % colors.length],
         }));
     }, [likesStat]);
-
     useEffect(() => {
         void statisticsService.getUsersCount();
         void statisticsService.getLikesCount();
         void statisticsService.getVacationsStatistics();
         void statisticsService.getLikesStatistics();
     }, []);
-
     return (
         <Grid container spacing={2} sx={{ textAlign: "center" }}>
             <Grid item md={6} xs={12}>

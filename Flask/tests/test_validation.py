@@ -40,7 +40,8 @@ def test_invalid_vacation(overrides):
 
 
 def test_edit_allows_existing_past_start_date_without_new_image():
-    assert vacation(start_date="2000-01-01", image=None).validate_update() is None
+    assert vacation(start_date="2000-01-01",
+                    image=None).validate_update() is None
 
 
 @pytest.mark.parametrize("overrides", [{"start_date": "bad-date"}, {"price": "bad-price"}])

@@ -26,7 +26,8 @@ def app(monkeypatch):
     dal.return_value.reset_mock()
     monkeypatch.setitem(application.config, "TESTING", True)
     monkeypatch.setitem(application.config, "SECRET_KEY", "test-only-secret")
-    monkeypatch.setattr(application, "test_dal", dal.return_value, raising=False)
+    monkeypatch.setattr(application, "test_dal",
+                        dal.return_value, raising=False)
     yield application
 
 

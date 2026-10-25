@@ -7,7 +7,6 @@ RUN apk add --no-cache gcc musl-dev mysql-dev pkgconfig && \
 COPY requirements.txt .
 RUN /app/env/bin/pip install --no-cache-dir -r requirements.txt
 
-
 # SERVER
 FROM python:3.14.4-alpine3.23
 ENV APP_HOST=0.0.0.0 \

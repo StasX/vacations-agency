@@ -1,7 +1,5 @@
 from datetime import datetime
-
 import pytest
-
 from models.client_errors import AuthError, ResourceNotFoundError, ValidationError
 from models.credentials_model import CredentialsModel
 from models.user_model import UserModel
@@ -28,7 +26,8 @@ def test_credentials_length_boundaries(email, password):
 
 
 @pytest.mark.parametrize("field,value,message", [
-    ("first_name", None, "Missing first name."), ("last_name", None, "Missing last name."),
+    ("first_name", None, "Missing first name."), ("last_name",
+                                                  None, "Missing last name."),
     ("email", None, "Missing email."), ("password", None, "Missing password."),
     ("role", None, "Missing role."),
     ("first_name", "x", "First name length should be 2-32 characters."),
@@ -36,17 +35,20 @@ def test_credentials_length_boundaries(email, password):
     ("last_name", "x", "Last name length should be 2-32 characters."),
     ("last_name", "x" * 33, "Last name length should be 2-32 characters."),
     ("email", "bad-email", "Entered invalid email."),
-    ("password", "abc", "Entered too short password."), ("role", 1, "This role unacceptable"),
+    ("password", "abc", "Entered too short password."), ("role",
+                                                         1, "This role unacceptable"),
 ])
 def test_user_validation_messages(field, value, message):
-    values = dict(id=None, first_name="Test", last_name="User", email="test@example.com", password="abcd", role=2)
+    values = dict(id=None, first_name="Test", last_name="User",
+                  email="test@example.com", password="abcd", role=2)
     values[field] = value
     assert UserModel(**values).validate_insert() == message
 
 
 @pytest.mark.parametrize("length", [2, 32])
 def test_valid_user_name_boundaries(length):
-    user = UserModel(None, "x" * length, "x" * length, "test@example.com", "abcd", 2)
+    user = UserModel(None, "x" * length, "x" * length,
+                     "test@example.com", "abcd", 2)
     assert user.validate_insert() is None
 
 
@@ -62,7 +64,8 @@ def model(monkeypatch):
     ("start_date", "", "Missing start date."), ("end_date", "", "Missing end date."),
     ("price", "", "Missing price."), ("country", "abc", "Country is invalid"),
     ("end_date", "2029-01-01", "Start of vacation can't be before vacation end"),
-    ("price", "-0.01", "Price is invalid."), ("price", "10000.01", "Price is invalid."),
+    ("price", "-0.01", "Price is invalid."), ("price",
+                                              "10000.01", "Price is invalid."),
     ("price", "nan", "Price is invalid."), ("price", "inf", "Price is invalid."),
 ])
 def test_vacation_validation_rules(model, method, field, value, message):

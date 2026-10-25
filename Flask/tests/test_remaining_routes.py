@@ -13,8 +13,10 @@ def form(**changes):
 
 
 def test_login_root_accepts_post(client, app):
-    app.test_dal.get_scalar.return_value = dict(id=7, first_name="Test", last_name="User", role=2, password="hash")
-    response = client.post("/", data={"email": "test@example.com", "password": "Abc123"})
+    app.test_dal.get_scalar.return_value = dict(
+        id=7, first_name="Test", last_name="User", role=2, password="hash")
+    response = client.post(
+        "/", data={"email": "test@example.com", "password": "Abc123"})
     assert response.status_code == 302 and response.location == "/vacations"
 
 
@@ -102,14 +104,16 @@ def test_admin_edit_keeps_or_replaces_image(client, app, sign_in, image_director
     old = image_directory / "old.jpg"
     old.write_bytes(b"old")
     app.test_dal.get_scalar.return_value = {"image": old.name}
-    data = form(image=(BytesIO(b"new" if replace else b""), "new.jpg" if replace else ""))
+    data = form(image=(BytesIO(b"new" if replace else b""),
+                "new.jpg" if replace else ""))
     response = client.post("/vacations/12/edit", data=data)
     assert response.status_code == 302 and response.location == "/vacations"
     params = app.test_dal.update.call_args.args[1]
     assert params[:5] == ("1", "Holiday", "2099-01-01", "2099-01-02", "100")
     assert params[-1] == 12
     assert old.exists() == (not replace)
-    assert (image_directory / params[-2]).read_bytes() == (b"new" if replace else b"old")
+    assert (image_directory /
+            params[-2]).read_bytes() == (b"new" if replace else b"old")
 
 
 @pytest.mark.parametrize("signed_in", [False, True])
@@ -188,7 +192,8 @@ def test_delete_get_does_not_mutate(client, app, sign_in, monkeypatch):
 @pytest.mark.xfail(strict=True, reason="POST forms do not enforce CSRF tokens")
 def test_add_without_csrf_token_is_rejected(client, app, sign_in, image_directory):
     sign_in(1)
-    response = client.post("/vacations/add", data=form(image=(BytesIO(b"image"), "image.jpg")))
+    response = client.post(
+        "/vacations/add", data=form(image=(BytesIO(b"image"), "image.jpg")))
     assert response.status_code in (400, 403)
     app.test_dal.insert.assert_not_called()
 
@@ -197,6 +202,7 @@ def test_add_without_csrf_token_is_rejected(client, app, sign_in, image_director
 def test_non_image_upload_is_rejected(client, app, sign_in, image_directory):
     sign_in(1)
     app.test_dal.get_table.return_value = []
-    client.post("/vacations/add", data=form(image=(BytesIO(b"<script>alert(1)</script>"), "attack.html")))
+    client.post("/vacations/add",
+                data=form(image=(BytesIO(b"<script>alert(1)</script>"), "attack.html")))
     app.test_dal.insert.assert_not_called()
     assert not list(image_directory.iterdir())

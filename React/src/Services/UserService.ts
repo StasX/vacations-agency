@@ -14,7 +14,6 @@ class UserService {
         const action = userActions.login(user);
         store.dispatch(action);
     }
-
     public async login(credentials: CredentialsModel): Promise<void> {
         const response = await axios.post<{ access_token: string }>(appConfig.loginUrl, credentials, {
             withCredentials: true,
@@ -25,7 +24,6 @@ class UserService {
         store.dispatch(action);
         localStorage.setItem("token", token);
     }
-
     public async logout(): Promise<void> {
         await axios.delete<string>(appConfig.logoutUrl);
         const action = userActions.logout();

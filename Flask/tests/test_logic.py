@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock
-
 import pytest
-
 from logic.auth_logic import AuthLogic
 from logic.countries_logic import CountriesLogic
 from logic.likes_logic import LikesLogic
@@ -70,19 +68,24 @@ def test_vacation_queries_return_rows_and_bind_ids(app):
 
 def test_vacation_update_parameters(app, monkeypatch):
     image = object()
-    vacation = VacationModel(12, "1", "O'Connor holiday", "2099-01-01", "2099-01-02", "100", image)
+    vacation = VacationModel(12, "1", "O'Connor holiday",
+                             "2099-01-01", "2099-01-02", "100", image)
     app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
     update_image = MagicMock(return_value="new.jpg")
-    monkeypatch.setattr("logic.vacations_logic.ImageHandler.update_image", update_image)
+    monkeypatch.setattr(
+        "logic.vacations_logic.ImageHandler.update_image", update_image)
     VacationsLogic().update_vacation(vacation)
     update_image.assert_called_once_with("old.jpg", image)
     sql, params = app.test_dal.update.call_args.args
     assert vacation.description not in sql
-    assert params == ("1", vacation.description, "2099-01-01", "2099-01-02", "100", "new.jpg", 12)
+    assert params == ("1", vacation.description, "2099-01-01",
+                      "2099-01-02", "100", "new.jpg", 12)
 
 
 def test_image_failure_prevents_database_insert(app, monkeypatch):
-    monkeypatch.setattr("logic.vacations_logic.ImageHandler.save_image", MagicMock(side_effect=OSError("disk full")))
+    monkeypatch.setattr("logic.vacations_logic.ImageHandler.save_image", MagicMock(
+        side_effect=OSError("disk full")))
     with pytest.raises(OSError):
-        VacationsLogic().add_vacation(VacationModel(1, "1", "Holiday", "2099-01-01", "2099-01-02", "100", object()))
+        VacationsLogic().add_vacation(VacationModel(1, "1", "Holiday",
+                                                    "2099-01-01", "2099-01-02", "100", object()))
     app.test_dal.insert.assert_not_called()

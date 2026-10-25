@@ -1,6 +1,5 @@
 from datetime import date
 from io import BytesIO
-
 import pytest
 
 

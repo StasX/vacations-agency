@@ -16,10 +16,8 @@ export function Home(): JSX.Element {
                     <Box sx={{ margin: "auto" }}>
                         <img src={stat} alt="Statistics" width={400} />
                     </Box>
-
                 </Grid>
                 <Grid item md={8} sm={12}>
-
                     <Typography>Another our system "Vacation agency" allows to user to like / unlike vacations.</Typography>
                     <Typography>Current our system display to administrators statistics about "Vacations agency".</Typography>
                 </Grid>

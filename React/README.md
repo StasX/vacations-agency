@@ -3,7 +3,11 @@
 React 19 and TypeScript, built with Vite. Use Node.js 24 LTS and npm.
 
 Run npm ci, then npm start to serve the app on port 3000.
-API URLs are configured in src/Utils/AppConfig.ts.
+API URLs in src/Utils/AppConfig.ts use same-origin /api/ paths, so browsers
+contact the host serving the frontend. Vite forwards these requests to
+http://127.0.0.1:8000 during development and preview; run Django locally on
+port 8000. Docker's nginx forwards them to vacations-statistics:8000 on the
+Compose network. Remote deployments need HTTPS for Django's Secure refresh cookie.
 
 - npm run build: type check and build into build/
 - npm run preview: preview the production build

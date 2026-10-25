@@ -86,9 +86,6 @@ test('a rejected refresh logs out and redirects to login', async () => {
     jest.mocked(axios.delete).mockResolvedValue({});
     await userService.refreshToken();
     expect(window.location.href).toBe('http://localhost/login');
-    // refreshToken starts logout without awaiting it.
-    await Promise.resolve();
-    await Promise.resolve();
     expect(store.getState().user).toBeNull();
     expect(localStorage.getItem('token')).toBeNull();
 });

@@ -7,13 +7,23 @@ import { appConfig } from '../../src/Utils/AppConfig';
 
 test('retries wait for refresh completion', async () => {
     localStorage.setItem('token', 'expired');
-    jest.mocked(userService.refreshToken).mockReturnValue(new Promise(() => {}));
+    let finishRefresh!: () => void;
+    jest.mocked(userService.refreshToken).mockReturnValue(new Promise<void>((resolve) => {
+        finishRefresh = resolve;
+    }));
     jest.mocked(axios.get).mockRejectedValueOnce({ response: { status: 406 } });
     await statisticsService.getUsersCount();
     jest.mocked(axios.get).mockResolvedValue({ data: {} });
     jest.mocked(axios.get).mockClear();
     jest.advanceTimersByTime(2000);
     expect(axios.get).not.toHaveBeenCalled();
+    localStorage.setItem('token', 'renewed');
+    finishRefresh();
+    await Promise.resolve();
+    jest.advanceTimersByTime(1000);
+    expect(axios.get).toHaveBeenCalledTimes(4);
+    expect(jest.mocked(axios.get).mock.calls.every(([, options]) =>
+        options?.headers?.Authorization === 'renewed')).toBe(true);
 });
 
 jest.mock('axios', () => ({ get: jest.fn() }));

@@ -10,9 +10,13 @@ class UserService {
 
         const token = localStorage.getItem("token");
         if (!token) return;
-        const user = jwtDecode<{ user: UserModel }>(token).user;
-        const action = userActions.login(user);
-        store.dispatch(action);
+        try {
+            const user = jwtDecode<{ user: UserModel }>(token).user;
+            if (!user || !user.id) throw new Error("Invalid saved session");
+            store.dispatch(userActions.login(user));
+        } catch {
+            localStorage.removeItem("token");
+        }
     }
     public async login(credentials: CredentialsModel): Promise<void> {
         const response = await axios.post<{ access_token: string }>(appConfig.loginUrl, credentials, {
@@ -25,7 +29,7 @@ class UserService {
         localStorage.setItem("token", token);
     }
     public async logout(): Promise<void> {
-        await axios.delete<string>(appConfig.logoutUrl);
+        await axios.delete<string>(appConfig.logoutUrl, { withCredentials: true });
         const action = userActions.logout();
         store.dispatch(action);
         localStorage.removeItem("token");
@@ -41,8 +45,13 @@ class UserService {
             localStorage.setItem("token", token);
         } catch (err: any) {
             if (err?.response?.status === 401) {
-                this.logout();
-                window.location.href = `${window.location.origin}/login`;
+                try {
+                    await this.logout();
+                } finally {
+                    store.dispatch(userActions.logout());
+                    localStorage.removeItem("token");
+                    window.location.href = `${window.location.origin}/login`;
+                }
             }
         }
     }

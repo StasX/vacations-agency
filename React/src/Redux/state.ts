@@ -1,40 +1,40 @@
 import { configureStore, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { liked, login, logout, members, vacationsStats } from "./reducers";
-import { UserModel } from "../Models/UserModel";
-import { TotalLikesModel } from "../Models/TotalLikesModel";
-import { TotalUsersModel } from "../Models/TotalUsersModel";
-import { VacationsStatisticsModel } from "../Models/VacationsStatisticsModel";
+import type { UserModel } from "../Models/UserModel";
+import type { TotalLikesModel } from "../Models/TotalLikesModel";
+import type { TotalUsersModel } from "../Models/TotalUsersModel";
+import type { VacationsStatisticsModel } from "../Models/VacationsStatisticsModel";
 import type { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
 
 export type AppState = {
-    user: UserModel;
-    usersCalc: TotalUsersModel;
-    likesCalc: TotalLikesModel;
-    vacationsStat: VacationsStatisticsModel;
+    user: UserModel | null;
+    usersCalc: TotalUsersModel | null;
+    likesCalc: TotalLikesModel | null;
+    vacationsStat: VacationsStatisticsModel | null;
     likesStat: LikesStatisticsModel[];
 };
 
 const userSlice = createSlice({
     name: "user",
-    initialState: new UserModel(),
+    initialState: null as UserModel | null,
     reducers: { login, logout }
 });
 
 const usersCalcSlice = createSlice({
     name: "usersCalc",
-    initialState: new TotalUsersModel(),
+    initialState: null as TotalUsersModel | null,
     reducers: { members }
 });
 
 const likesCalcSlice = createSlice({
     name: "likesCalc",
-    initialState: new TotalLikesModel(),
+    initialState: null as TotalLikesModel | null,
     reducers: { liked }
 });
 
 const vacationsStatSlice = createSlice({
     name: "vacationsStat",
-    initialState: new VacationsStatisticsModel(),
+    initialState: null as VacationsStatisticsModel | null,
     reducers: { vacationsStats }
 });
 

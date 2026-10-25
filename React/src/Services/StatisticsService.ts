@@ -90,11 +90,10 @@ class StatisticsService {
             }
         }
     }
-    private refreshToken() {
+    private async refreshToken() {
         if (!this.canRefreshToken) return;
         this.canRefreshToken = false;
-        userService.refreshToken();
-        // I assume that token token refreshing will take second other way it will attempt again  
+        await userService.refreshToken();
         setTimeout(() => {
             this.getLikesCount();
             this.getLikesStatistics();

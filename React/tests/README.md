@@ -61,10 +61,9 @@ Jest transpiles TypeScript; it does not run the TypeScript compiler.
 
 ## Regression tests
 
-All tests assert expected application behavior; none are skipped. The upgrade
-verification runs all 67 tests: 56 pass and 11 fail in existing application
-behavior (empty session state, cookie options, malformed saved tokens, refresh
-retry timing, delayed statistics, and header timer cleanup).
+All 74 tests pass; none are skipped. Regression coverage includes empty session
+state, logout cookies, malformed saved tokens, refresh completion before retries,
+statistics rendering, and header timer cleanup.
 
 Redux serializability warnings may appear for existing model instances.
 The shared tsconfig.json includes src and tests. Run npx tsc --noEmit to

@@ -35,12 +35,13 @@ export function Header(): JSX.Element {
     const [name, setName] = useState<string>();
     useEffect(() => {
         // Watch for user changes
-        setInterval(() => {
+        const timer = setInterval(() => {
             const user = store.getState().user;
             if (!!user) {
                 setName(`${user?.firstName} ${user?.lastName}`);
             }
         }, 1500);
+        return () => clearInterval(timer);
 
     }, []);
 

@@ -6,30 +6,30 @@ import type { VacationsStatisticsModel } from "../Models/VacationsStatisticsMode
 import type { LikesStatisticsModel } from "../Models/LikesStatisticsModel";
 
 // Login and Token Refresh
-export function login(currentState: UserModel, action: PayloadAction<UserModel>): UserModel {
+export function login(currentState: UserModel | null, action: PayloadAction<UserModel>): UserModel {
     const newState = action.payload;
     return newState;
 }
 
 // Logout
-export function logout(currentState: UserModel, action: PayloadAction): UserModel {
-    return new UserModel();
+export function logout(currentState: UserModel | null, action: PayloadAction): null {
+    return null;
 }
 
 // Users count
-export function members(currentState: TotalUsersModel, action: PayloadAction<TotalUsersModel>): TotalUsersModel {
+export function members(currentState: TotalUsersModel | null, action: PayloadAction<TotalUsersModel>): TotalUsersModel {
     const newState = action.payload;
     return newState;
 }
 
 // Likes count
-export function liked(currentState: TotalLikesModel, action: PayloadAction<TotalLikesModel>): TotalLikesModel {
+export function liked(currentState: TotalLikesModel | null, action: PayloadAction<TotalLikesModel>): TotalLikesModel {
     const newState = action.payload;
     return newState;
 }
 
 // Vacations statistics
-export function vacationsStats(currentState: VacationsStatisticsModel, action: PayloadAction<VacationsStatisticsModel>): VacationsStatisticsModel {
+export function vacationsStats(currentState: VacationsStatisticsModel | null, action: PayloadAction<VacationsStatisticsModel>): VacationsStatisticsModel {
     const newState = action.payload;
     return newState;
 }

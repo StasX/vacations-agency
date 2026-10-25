@@ -155,7 +155,7 @@ def test_unexpected_exception_returns_500(client, app, sign_in, monkeypatch):
 @pytest.mark.xfail(strict=True, reason="Likes route does not handle anonymous AuthError")
 def test_anonymous_like_redirects_without_mutation(client, app, monkeypatch):
     monkeypatch.setattr("app.Logger.write_log", lambda error: None)
-    response = client.get("/likes/like/12")
+    response = client.post("/likes/like/12")
     app.test_dal.insert.assert_not_called()
     app.test_dal.delete.assert_not_called()
     assert response.status_code == 302 and response.location == "/login"
@@ -168,7 +168,8 @@ def test_missing_vacation_returns_404(client, app, sign_in, monkeypatch, path):
     app.test_dal.get_scalar.return_value = None
     app.test_dal.get_table.return_value = []
     monkeypatch.setattr("app.Logger.write_log", lambda error: None)
-    assert client.get(path).status_code == 404
+    response = client.post(path) if path.endswith('/delete') else client.get(path)
+    assert response.status_code == 404
 
 
 @pytest.mark.xfail(strict=True, reason="Missing multipart image field becomes a generic error during edit")
@@ -180,17 +181,16 @@ def test_edit_without_image_field_preserves_image(client, app, sign_in, monkeypa
     assert app.test_dal.update.call_args.args[1][-2] == "old.jpg"
 
 
-@pytest.mark.xfail(strict=True, reason="Delete currently mutates state through GET")
 def test_delete_get_does_not_mutate(client, app, sign_in, monkeypatch):
     sign_in(1)
     app.test_dal.get_scalar.return_value = {"image": None}
     monkeypatch.setattr("app.Logger.write_log", lambda error: None)
-    client.get("/vacations/12/delete")
+    assert client.get("/vacations/12/delete").status_code == 405
     app.test_dal.delete.assert_not_called()
 
 
-@pytest.mark.xfail(strict=True, reason="POST forms do not enforce CSRF tokens")
 def test_add_without_csrf_token_is_rejected(client, app, sign_in, image_directory):
+    app.config["CSRF_ENABLED"] = True
     sign_in(1)
     response = client.post(
         "/vacations/add", data=form(image=(BytesIO(b"image"), "image.jpg")))

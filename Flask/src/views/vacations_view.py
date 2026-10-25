@@ -116,7 +116,7 @@ def edit(id):
         return render_template("edit_vacations.html", error=err.message, vacation=err.model, countries=countries)
 
 
-@vacations_blueprint.route("/vacations/<int:id>/delete")
+@vacations_blueprint.route("/vacations/<int:id>/delete", methods=["POST"])
 def delete(id):
     try:
         # Block non Admins

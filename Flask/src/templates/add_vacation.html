@@ -24,6 +24,7 @@
         <div class="row justify-content-center">
             <form method="post" id="vacationForm" class="col col-lg-4 col-md-6" enctype="multipart/form-data"
                 onsubmit="validateVacationForm(event)">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <h3>Add Vacation</h3>
                 <div class="label">country</div>
                 <div class="dropdown">

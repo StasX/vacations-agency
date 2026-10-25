@@ -25,11 +25,14 @@
             {% for vacation in vacations %}
             <div class="col-sm-12 col-md-6 col-lg-4 col-xl-4">
                 <div class="card" style="width: 26rem;">
-                    <a href="{{ url_for( 'likes_view.like', id=vacation.id ) }}"
-                        class="btn btn-sm {{'btn-reddish' if vacation.liked==1 else 'btn-light' }} like-btn">
-                        <i class="{{ 'fa-solid fa-heart' if vacation.liked==1 else 'fa-regular fa-heart' }}"></i>
-                        <span class="counter">{{ vacation.likes_count }}</span>Likes
-                    </a>
+                    <form method="post" action="{{ url_for('likes_view.like', id=vacation.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit"
+                            class="btn btn-sm {{'btn-reddish' if vacation.liked==1 else 'btn-light' }} like-btn">
+                            <i class="{{ 'fa-solid fa-heart' if vacation.liked==1 else 'fa-regular fa-heart' }}"></i>
+                            <span class="counter">{{ vacation.likes_count }}</span>Likes
+                        </button>
+                    </form>
                     <span class="card-city">{{ vacation.country }}</span>
                     <img src="{{ url_for('vacations_view.get_image', image_name = (vacation.image if vacation.image else '_')) }}"
                         class="card-img-top" alt="{{ vacation.country }}">

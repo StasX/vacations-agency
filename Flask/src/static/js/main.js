@@ -103,7 +103,7 @@ function showModal(props) {
 }
 
 // Handle "delete" button click 
-function deleteVacation(url) {
+function deleteVacation(form) {
     // Show modal window
     showModal({
         title: '<i class="fa-solid fa-triangle-exclamation"></i>',
@@ -112,8 +112,7 @@ function deleteVacation(url) {
         cancelBtnText: "No",
         okBtnText: "Yes",
         okBtnAction: () => {
-            // Go to "vacation removing" url
-            location.href = location.origin + url;
+            form.submit();
         }
     });
     // Add handlers for modal window

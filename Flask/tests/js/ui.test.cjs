@@ -138,17 +138,19 @@ test('confirmation modal has default cancel label', () => {
     assert.match(body.html, />Cancel<\/button>/);
 });
 
-test('delete confirmation navigates only after confirmation', () => {
+test('delete confirmation submits the form only after confirmation', () => {
     const { context, elements, body, modal } = setup();
-    context.deleteVacation('/vacations/12/delete');
-    assert.equal(context.location.href, '');
+    let submissions = 0;
+    const form = { submit() { submissions++; } };
+    context.deleteVacation(form);
+    assert.equal(submissions, 0);
     elements.cancel.onclick();
     assert.equal(modal.removed, true);
     assert.equal(body.style.overflow, 'auto');
-    assert.equal(context.location.href, '');
-    context.deleteVacation('/vacations/12/delete');
+    assert.equal(submissions, 0);
+    context.deleteVacation(form);
     elements.ok.onclick();
-    assert.equal(context.location.href, 'https://example.test/vacations/12/delete');
+    assert.equal(submissions, 1);
 });
 
 for (const file of [undefined, { type: 'text/plain' }]) {

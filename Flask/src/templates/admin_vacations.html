@@ -32,9 +32,12 @@
                 <div class="card" style="width: 26rem;">
                     <a href="{{ url_for('vacations_view.edit', id=vacation.id ) }}"
                         class="btn btn-sm btn-light edit-btn"><i class="fa-solid fa-pen"></i>Edit</a>
-                    <button class="btn btn-sm btn-light delete-btn"
-                        onclick="deleteVacation(`{{ url_for('vacations_view.delete', id=vacation.id)  }}`)"><i
-                            class="fa-solid fa-trash"></i>Delete</button>
+                    <form method="post" action="{{ url_for('vacations_view.delete', id=vacation.id) }}"
+                        onsubmit="event.preventDefault(); deleteVacation(this)">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-light delete-btn"><i
+                                class="fa-solid fa-trash"></i>Delete</button>
+                    </form>
                     <span class="card-city">{{ vacation.country }}</span>
                     <img src="{{ url_for('vacations_view.get_image', image_name = (vacation.image if vacation.image else '_')) }}"
                         class="card-img-top" alt="{{ vacation.country }}">

@@ -25,6 +25,8 @@ def app(monkeypatch):
     monkeypatch.setattr(AppConfig, "passwords_salt", "test-only-salt")
     dal.return_value.reset_mock()
     monkeypatch.setitem(application.config, "TESTING", True)
+    # Dedicated CSRF tests enable protection; existing tests isolate route behavior.
+    monkeypatch.setitem(application.config, "CSRF_ENABLED", False)
     monkeypatch.setitem(application.config, "SECRET_KEY", "test-only-secret")
     monkeypatch.setattr(application, "test_dal",
                         dal.return_value, raising=False)

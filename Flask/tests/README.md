@@ -43,7 +43,6 @@ Known defects are executable regression tests marked as strict expected failures
 - Anonymous likes produce a generic error rather than redirecting to login.
 - Missing vacation records do not return 404.
 - Editing without an image field fails instead of preserving the image.
-- Deletion mutates state through GET, and POST forms lack CSRF enforcement.
 - Non-image uploads are accepted by the server.
 - Request-created database connections are not closed.
 

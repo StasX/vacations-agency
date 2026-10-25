@@ -10,7 +10,7 @@ def test_public_pages(client, path):
 
 @pytest.mark.parametrize("path", ["/vacations", "/vacations/add", "/vacations/1/edit", "/vacations/1/delete"])
 def test_anonymous_users_are_redirected(client, app, path):
-    response = client.get(path)
+    response = client.post(path) if path.endswith('/delete') else client.get(path)
     assert response.status_code == 302
     assert response.location == "/login"
     app.test_dal.delete.assert_not_called()
@@ -19,7 +19,7 @@ def test_anonymous_users_are_redirected(client, app, path):
 @pytest.mark.parametrize("method,path", [
     ("get", "/vacations/add"), ("post", "/vacations/add"),
     ("get", "/vacations/1/edit"), ("post", "/vacations/1/edit"),
-    ("get", "/vacations/1/delete"),
+    ("post", "/vacations/1/delete"),
 ])
 def test_regular_users_cannot_manage_vacations(client, app, sign_in, path, method):
     sign_in()
@@ -50,7 +50,7 @@ def test_vacation_list_formats_dates_and_uses_current_user(client, app, sign_in,
 def test_like_toggles_for_current_user(client, app, sign_in, already_liked):
     sign_in()
     app.test_dal.get_scalar.return_value = {"cnt": int(already_liked)}
-    response = client.get("/likes/like/12")
+    response = client.post("/likes/like/12")
     assert response.status_code == 302
     operation = app.test_dal.delete if already_liked else app.test_dal.insert
     assert operation.call_args.args[1] == (7, 12)
@@ -78,7 +78,7 @@ def test_admin_delete_removes_record_and_image(client, app, sign_in, tmp_path, m
     image.parent.mkdir(parents=True)
     image.write_bytes(b"image")
     app.test_dal.get_scalar.return_value = {"image": "rome.jpg"}
-    assert client.get("/vacations/1/delete").status_code == 302
+    assert client.post("/vacations/1/delete").status_code == 302
     assert not image.exists()
     assert app.test_dal.delete.call_args.args[1] == (1,)
 

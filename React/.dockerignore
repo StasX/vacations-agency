@@ -2,3 +2,5 @@
 node_modules
 Dockerfile
 build
+coverage/
+.coverage

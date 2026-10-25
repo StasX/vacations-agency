@@ -110,7 +110,7 @@ The Flask application handles customer-facing operations and vacation administra
 vacations-agency/
 ├── Django/              # Statistics backend API
 ├── Flask/               # Customer and administrator application
-├── Mysql/               # Database configuration
+├── MySQL/               # Database configuration
 ├── React/               # Agency statistics frontend
 ├── docs/
 │   └── screenshots/     # Customer, admin, and dashboard screenshots

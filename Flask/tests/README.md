@@ -37,7 +37,6 @@ node --test Flask/tests/js/ui.test.cjs
 
 Known defects are executable regression tests marked as strict expected failures:
 
-- Missing-page and exception handlers return HTTP 200 instead of 404/500.
 - Invalid edit submissions use incorrect country column names during recovery.
 - Malformed dates and prices raise `ValueError` instead of validation errors.
 - Anonymous likes produce a generic error rather than redirecting to login.

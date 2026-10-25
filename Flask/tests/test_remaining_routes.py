@@ -140,11 +140,11 @@ def test_exception_handler_logs_and_renders_generic_error(client, app, sign_in, 
     monkeypatch.setattr("app.Logger.write_log", logger)
     response = client.get("/vacations")
     logger.assert_called_once_with(error)
+    assert response.status_code == 500
     assert b"private database details" not in response.data
-    assert b"Reload" in response.data
+    assert b'href="/vacations"' in response.data
 
 
-@pytest.mark.xfail(strict=True, reason="Exception handler currently returns HTTP 200")
 def test_unexpected_exception_returns_500(client, app, sign_in, monkeypatch):
     sign_in()
     app.test_dal.get_table.side_effect = RuntimeError("offline")

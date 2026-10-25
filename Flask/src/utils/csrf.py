@@ -1,7 +1,7 @@
 from hmac import compare_digest
 from secrets import token_urlsafe
 
-from flask import request, session
+from flask import abort, request, session
 
 
 def csrf_token():
@@ -23,4 +23,4 @@ def init_csrf(app):
         submitted = request.form.get("csrf_token")
         if (not expected or not submitted or
                 not compare_digest(expected.encode("utf-8"), submitted.encode("utf-8"))):
-            return "Invalid or missing CSRF token. Reload the form and try again.", 400
+            abort(400, description="Invalid or missing CSRF token. Reload the form and try again.")

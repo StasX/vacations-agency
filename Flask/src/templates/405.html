@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}Method not allowed{% endblock title %}
+{% block content %}
+<header></header>
+<main>
+    <div class="error-page">
+        <h1>Error</h1>
+        <div class="large">4<i class="fa-solid fa-hand"></i>5</div>
+        <h3>This action is not allowed.</h3>
+        <h5>Please return to the page and use its buttons to continue.</h5>
+        <div class="btn-row">
+            {% include "error_navigation.html" %}
+        </div>
+    </div>
+</main>
+{% endblock content %}

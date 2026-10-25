@@ -1,0 +1,5 @@
+{% if session.get('current_user') %}
+<a class="btn btn-primary btn-lg" href="{{ url_for('vacations_view.list') }}">Go to vacations</a>
+{% else %}
+<a class="btn btn-primary btn-lg" href="{{ url_for('auth_view.login') }}">Go to login</a>
+{% endif %}

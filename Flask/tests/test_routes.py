@@ -83,7 +83,6 @@ def test_admin_delete_removes_record_and_image(client, app, sign_in, tmp_path, m
     assert app.test_dal.delete.call_args.args[1] == (1,)
 
 
-@pytest.mark.xfail(strict=True, reason="404 handler currently returns HTTP 200")
 def test_missing_page_returns_404(client):
     assert client.get("/missing-page").status_code == 404
 

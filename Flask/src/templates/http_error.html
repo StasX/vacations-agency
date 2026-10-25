@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ error.code }} - {{ error.name }}{% endblock title %}
+{% block content %}
+<header></header>
+<main>
+    <div class="error-page">
+        <h1>Error</h1>
+        <div class="large">{{ error.code }}</div>
+        <h3>{{ error.name }}</h3>
+        <p>{{ error.description }}</p>
+        <div class="btn-row">
+            {% include "error_navigation.html" %}
+        </div>
+    </div>
+</main>
+{% endblock content %}

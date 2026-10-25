@@ -8,11 +8,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    # Preserve command failures when output is piped through tee.
-    shell: bash --noprofile --norc -eo pipefail {0}
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -60,6 +55,7 @@ jobs:
 
       - name: Run tests
         run: |
+          set -eo pipefail
           mkdir -p reports
           python -m pytest -q --junitxml=reports/pytest.xml 2>&1 | tee reports/pytest.log
 
@@ -96,18 +92,21 @@ jobs:
 
       - name: Run tests
         run: |
+          set -eo pipefail
           mkdir -p reports
           npm run test:ci -- --json --outputFile=reports/jest.json 2>&1 | tee reports/jest.log
 
       - name: Check TypeScript
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
         run: |
+          set -eo pipefail
           mkdir -p reports
           npx --no-install tsc --noEmit 2>&1 | tee reports/typescript.log
 
       - name: Build production frontend
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
         run: |
+          set -eo pipefail
           mkdir -p reports
           npm run build 2>&1 | tee reports/build.log
 
@@ -136,6 +135,7 @@ jobs:
 
       - name: Scan Dockerfiles and GitHub Actions
         run: |
+          set -eo pipefail
           mkdir -p reports/checkov
           checkov --directory . --framework dockerfile github_actions --compact 2>&1 | tee reports/checkov/checkov.log
 
@@ -197,6 +197,7 @@ jobs:
 
       - name: Scan Flask and Django application code
         run: |
+          set -eo pipefail
           mkdir -p reports/bandit
           bandit --recursive Flask/src Django/src --severity-level medium --confidence-level medium --format json --output reports/bandit/bandit.json 2>&1 | tee reports/bandit/bandit.log
 

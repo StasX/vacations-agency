@@ -19,7 +19,7 @@ Unmanaged country, vacation, and like tables are created only in the test databa
 Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregation,
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 
-Known defects are documented with strict `xfail` tests: administrator authorization,
+Known defects are documented with strict `xfail` tests:
 access-token rejection by refresh, malformed login input, vacation error status,
 and multiple likes per user. These appear as expected failures; once a defect is
 fixed, remove its marker (an unexpected pass fails the suite).

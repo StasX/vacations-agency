@@ -40,6 +40,9 @@ def auth_middleware(get_response):
                 # Check if token type is access
                 if decoded.get("type") != "access":
                     return JsonResponse({"error": "Unauthorized"}, status=401)
+                user = decoded.get("user")
+                if not isinstance(user, dict) or user.get("role") != "Admin":
+                    return JsonResponse({"error": "Forbidden"}, status=403)
             except ExpiredSignatureError:
                 refresh_cookie = request.COOKIES.get("refresh")
                 if not refresh_cookie:

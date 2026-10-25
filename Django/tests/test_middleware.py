@@ -64,8 +64,17 @@ def test_cors_preflight(client):
     assert 'authorization' in response['Access-Control-Allow-Headers'].lower()
 
 
-@pytest.mark.django_db
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='Known bug: backend does not require administrator role')
-def test_non_admin_cannot_read_statistics(client, token_factory):
-    response = client.get('/api/users/total', HTTP_AUTHORIZATION=token_factory(user={'id': 9, 'role': 'User'}))
+@pytest.mark.parametrize('path', PROTECTED[:4])
+@pytest.mark.parametrize('user', [
+    {'id': 9, 'role': 'User'}, {'id': 9}, {'role': 'admin'}, None, 'Admin',
+])
+def test_non_admin_cannot_read_statistics(client, token_factory, path, user):
+    response = client.get(path, HTTP_AUTHORIZATION=token_factory(user=user))
     assert response.status_code == 403
+    assert response.json() == {'error': 'Forbidden'}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('path', PROTECTED[:4])
+def test_admin_can_read_statistics(authorized_client, path):
+    assert authorized_client.get(path).status_code == 200

@@ -3,7 +3,7 @@ services:
   # MySQL service: 
   vacations-database:
     image: sm1986/vacations-database:1.0
-    build: ./MySQL_
+    build: ./MySQL
     container_name: vacations-database
     volumes:
       - vacations-volume:/var/lib/mysql

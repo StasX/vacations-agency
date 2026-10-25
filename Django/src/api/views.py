@@ -114,6 +114,8 @@ def refresh_token(request):
         header_data = jwt.get_unverified_header(refresh_cookie)
         decoded = jwt.decode(refresh_cookie, AppConfig.secret_key,
                              audience=AppConfig.audience,  algorithms=[header_data["alg"]])
+        if decoded.get("type") != "refresh":
+            return JsonResponse({"error": "Unauthorized"}, status=401)
 
         access_payload = decoded.copy()
         access_payload["type"] = "access"

@@ -93,10 +93,23 @@ def test_logout(client, has_cookie):
         assert response.cookies['refresh']['max-age'] == 0
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='Known bug: refresh accepts access tokens')
-def test_refresh_rejects_access_token(client, token_factory):
-    client.cookies['refresh'] = token_factory()
-    assert client.get('/api/auth/refresh-token').status_code == 401
+@pytest.mark.parametrize('token_type', ['access', None, '', 'Refresh'])
+def test_refresh_rejects_non_refresh_token(client, token_factory, token_type):
+    client.cookies['refresh'] = token_factory(type=token_type)
+    response = client.get('/api/auth/refresh-token')
+    assert response.status_code == 401
+    assert response.json() == {'error': 'Unauthorized'}
+    assert 'refresh' not in response.cookies
+
+
+def test_refresh_rejects_token_without_type(client, token_factory):
+    payload = decode(token_factory(type='refresh'))
+    del payload['type']
+    client.cookies['refresh'] = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
+    response = client.get('/api/auth/refresh-token')
+    assert response.status_code == 401
+    assert response.json() == {'error': 'Unauthorized'}
+    assert 'refresh' not in response.cookies
 
 
 @pytest.mark.parametrize('body', ['{', '[]', 'null'])

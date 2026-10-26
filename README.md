@@ -172,6 +172,11 @@ Use HTTPS for remote deployments so browsers can send Django's Secure refresh
 cookie. The dashboard accesses Django through Nginx; direct public access to
 port 8000 is unnecessary for dashboard requests.
 
+Flask session cookies explicitly use `HttpOnly`, `SameSite=Lax`, and `Secure`
+by default. Keep `FLASK_COOKIE_SECURE=true` for HTTPS deployments. For local
+HTTP development, set `FLASK_COOKIE_SECURE=false` and
+`DJANGO_COOKIE_SECURE=false` in `.env` before starting the applications.
+
 After changing the frontend or its Nginx configuration, rebuild its container:
 
 ```bash

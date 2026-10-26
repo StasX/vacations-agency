@@ -10,4 +10,5 @@ class AppConfig:
     mysql_password = environ.get("MYSQL_PASSWORD")
     mysql_database = environ.get("MYSQL_DATABASE")
     session_secret_key = environ.get("SESSION_SECRET_KEY")
+    session_cookie_secure = environ.get("FLASK_COOKIE_SECURE", "true").strip().lower() in ("true", "1", "yes", "on")
     passwords_salt = environ.get("PASSWORDS_SALT")

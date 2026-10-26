@@ -17,6 +17,11 @@ app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
 # Create session secret key:
 app.secret_key = AppConfig.session_secret_key
+app.config.update(
+    SESSION_COOKIE_SECURE=AppConfig.session_cookie_secure,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 init_csrf(app)
 app.teardown_request(close_request_connections)
 

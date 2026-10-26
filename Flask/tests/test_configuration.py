@@ -1,7 +1,32 @@
 from pathlib import Path
 import runpy
+import pytest
 
 SRC = Path(__file__).resolve().parents[1] / "src"
+
+
+@pytest.mark.parametrize("value, expected", [(None, True), ("true", True), (" YES ", True), ("false", False), ("0", False)])
+def test_session_cookie_secure_environment(monkeypatch, value, expected):
+    monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
+    monkeypatch.delenv("FLASK_COOKIE_SECURE", raising=False)
+    if value is not None:
+        monkeypatch.setenv("FLASK_COOKIE_SECURE", value)
+    config = runpy.run_path(str(SRC / "utils/app_config.py"))["AppConfig"]
+    assert config.session_cookie_secure is expected
+
+
+@pytest.mark.parametrize("secure", [True, False])
+def test_session_cookie_headers(app, monkeypatch, secure):
+    from flask import session
+
+    monkeypatch.setitem(app.config, "SESSION_COOKIE_SECURE", secure)
+    with app.test_request_context("/", base_url="https://localhost"):
+        session["current_user"] = {"id": 7}
+        response = app.process_response(app.response_class())
+    cookie = response.headers["Set-Cookie"]
+    assert "HttpOnly" in cookie
+    assert "SameSite=Lax" in cookie
+    assert ("Secure" in cookie) is secure
 
 
 def test_configuration_reads_environment(monkeypatch):

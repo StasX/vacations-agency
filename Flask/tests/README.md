@@ -35,13 +35,8 @@ pytest. Without Node, pytest explicitly skips that test. It can also run directl
 node --test Flask/tests/js/ui.test.cjs
 ```
 
-Known defects are executable regression tests marked as strict expected failures:
-
-- Missing vacation records do not return 404.
-
-When fixing these defects, remove the corresponding `xfail` markers. Strict mode
-makes an unexpected pass fail the suite so a fix cannot silently leave a stale
-marker.
+Missing vacations return HTTP 404 for edit and delete, including records that
+disappear before a write. An unchanged MySQL update remains successful.
 
 Coverage measures Python statements and branches; it includes code executed by
 expected-failure tests. The remaining uncovered Python code includes unreachable

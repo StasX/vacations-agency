@@ -200,15 +200,54 @@ def test_anonymous_like_redirects_without_mutation(client, app, monkeypatch):
     assert response.status_code == 302 and response.location == "/login"
 
 
-@pytest.mark.parametrize("path", ["/vacations/999/edit", "/vacations/999/delete"])
-@pytest.mark.xfail(strict=True, reason="Missing vacations do not produce a 404 response")
-def test_missing_vacation_returns_404(client, app, sign_in, monkeypatch, path):
+@pytest.mark.parametrize('path,method,data', [
+    ('/vacations/999/edit', 'get', None),
+    ('/vacations/999/edit', 'post', form()),
+    ('/vacations/999/edit', 'post', form(price='bad')),
+    ('/vacations/999/delete', 'post', None),
+])
+def test_missing_vacation_returns_404(client, app, sign_in, monkeypatch, path, method, data):
     sign_in(1)
     app.test_dal.get_scalar.return_value = None
     app.test_dal.get_table.return_value = []
-    monkeypatch.setattr("app.Logger.write_log", lambda error: None)
-    response = client.post(path) if path.endswith('/delete') else client.get(path)
+    logger = MagicMock()
+    monkeypatch.setattr("app.Logger.write_log", logger)
+    response = getattr(client, method)(path, data=data)
     assert response.status_code == 404
+    assert b'class="error-page"' in response.data
+    app.test_dal.update.assert_not_called()
+    app.test_dal.delete.assert_not_called()
+    logger.assert_not_called()
+
+
+def test_delete_disappeared_vacation_returns_404_without_deleting_image(client, app, sign_in, image_directory):
+    sign_in(1)
+    old = image_directory / 'old.jpg'
+    old.write_bytes(b'old')
+    app.test_dal.get_scalar.return_value = {'image': old.name}
+    app.test_dal.delete.return_value = 0
+    response = client.post('/vacations/12/delete')
+    assert response.status_code == 404
+    assert old.read_bytes() == b'old'
+
+
+def test_unchanged_update_is_successful(client, app, sign_in):
+    sign_in(1)
+    app.test_dal.get_scalar.side_effect = [{'image': None}, {'id': 12}]
+    app.test_dal.update.return_value = 0
+    response = client.post('/vacations/12/edit', data=form())
+    assert response.status_code == 302
+
+
+def test_disappeared_update_returns_404_and_removes_new_image(client, app, sign_in, image_directory):
+    sign_in(1)
+    old = image_directory / 'old.jpg'
+    old.write_bytes(b'old')
+    app.test_dal.get_scalar.side_effect = [{'image': old.name}, None]
+    app.test_dal.update.return_value = 0
+    response = client.post('/vacations/12/edit', data=form(image=(BytesIO(make_image()), 'new.jpg')))
+    assert response.status_code == 404
+    assert list(image_directory.iterdir()) == [old]
 
 
 def test_edit_without_image_field_preserves_image(client, app, sign_in, monkeypatch):

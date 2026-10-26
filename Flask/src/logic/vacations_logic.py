@@ -1,6 +1,7 @@
 from utils.dal import DAL
 from utils.image_handler import ImageHandler
 from models.vacation_model import VacationModel
+from models.client_errors import ResourceNotFoundError
 
 
 class VacationsLogic:
@@ -36,6 +37,8 @@ class VacationsLogic:
     def get_one_vacation(self, id):
         sql = """SELECT V.id AS id, C.name as country, C.id AS country_id, V.description, V.start_date, V.end_date,V.price, V.image FROM vacations AS V JOIN countries AS C ON V.country_id = C.id WHERE V.id = %s ORDER BY start_date"""
         result = self.dal.get_scalar(sql, (id,))
+        if result is None:
+            raise ResourceNotFoundError(id)
         return result
 
     def add_vacation(self, vacation):
@@ -60,7 +63,9 @@ class VacationsLogic:
         params = (vacation.country, vacation.description,
                   vacation.start_date, vacation.end_date, vacation.price, image_name, vacation.id)
         try:
-            self.dal.update(sql, params)
+            if self.dal.update(sql, params) == 0:
+                # MySQL also returns zero for an unchanged row; check existence.
+                self.get_one_vacation(vacation.id)
         except Exception:
             if image_name != old_image:
                 ImageHandler.delete_image(image_name)
@@ -75,12 +80,17 @@ class VacationsLogic:
         sql = "DELETE FROM vacations WHERE id = %s"
         params = (id,)
         row_count = self.dal.delete(sql, params)
+        if row_count == 0:
+            raise ResourceNotFoundError(id)
         ImageHandler.delete_image(old_image)
+        return row_count
 
     def get_old_image_name(self, id):
         sql = "SELECT image FROM vacations WHERE id=%s"
         params = (id,)
         old_image_name = self.dal.get_scalar(sql, params)
+        if old_image_name is None:
+            raise ResourceNotFoundError(id)
         return old_image_name["image"]
 
     def close(self):

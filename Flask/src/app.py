@@ -8,6 +8,7 @@ from utils.app_config import AppConfig
 from utils.logger import Logger
 from utils.csrf import init_csrf
 from utils.dal import close_request_connections
+from models.client_errors import ResourceNotFoundError
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s: %(message)s')
@@ -25,6 +26,7 @@ app.register_blueprint(likes_blueprint)
 
 
 @app.errorhandler(404)
+@app.errorhandler(ResourceNotFoundError)
 def page_not_found(error):
     return render_template("404.html"), 404
 

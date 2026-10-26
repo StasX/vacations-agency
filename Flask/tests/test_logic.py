@@ -7,6 +7,7 @@ from logic.vacations_logic import VacationsLogic
 from models.credentials_model import CredentialsModel
 from models.user_model import UserModel
 from models.vacation_model import VacationModel
+from models.client_errors import ResourceNotFoundError
 
 
 def test_auth_insert_and_lookup_are_parameterized(app):
@@ -61,7 +62,8 @@ def test_vacation_queries_return_rows_and_bind_ids(app):
     assert logic.get_one_vacation(12) is rows[0]
     assert app.test_dal.get_scalar.call_args.args[1] == (12,)
     app.test_dal.get_scalar.return_value = None
-    assert logic.get_one_vacation(999) is None
+    with pytest.raises(ResourceNotFoundError):
+        logic.get_one_vacation(999)
     logic.close()
     app.test_dal.close.assert_called_once_with()
 

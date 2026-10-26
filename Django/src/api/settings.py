@@ -13,6 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = AppConfig.secret_key
 JWT_REDIS_URL = environ.get('JWT_REDIS_URL', 'redis://localhost:6379/0')
+JWT_REDIS_PASSWORD = environ.get('JWT_REDIS_PASSWORD')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environ.get('DJANGO_DEBUG', 'false').strip().lower() in ('true', '1', 'yes', 'on')

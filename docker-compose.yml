@@ -1,15 +1,23 @@
 services:
 
   vacations-redis:
-    image: redis:8.2-alpine
-    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "always", "--maxmemory-policy", "noeviction"]
+    image: vacations-redis:local
+    build: ./Redis
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=1m,mode=1777
+    pids_limit: 64
+    mem_limit: 256m
+    networks:
+      - redis-backend
     volumes:
       - redis-volume:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
     restart: unless-stopped
 
   # MySQL service: 
@@ -47,6 +55,7 @@ services:
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
       JWT_REDIS_URL: redis://vacations-redis:6379/0
+      JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
       DJANGO_CORS_ALLOWED_ORIGINS: ${DJANGO_CORS_ALLOWED_ORIGINS:-}
       DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-true}
@@ -63,6 +72,9 @@ services:
     restart: unless-stopped
     ports:
       - 8000:8000
+    networks:
+      - default
+      - redis-backend
   
   # ------------------------------------------------------------------------------------------
 
@@ -107,3 +119,7 @@ volumes:
   redis-volume:
   vacations-volume:
   vacation-images:
+
+networks:
+  redis-backend:
+    internal: true

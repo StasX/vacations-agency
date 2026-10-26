@@ -26,6 +26,7 @@ return 1
 def get_redis():
     return Redis.from_url(
         settings.JWT_REDIS_URL, decode_responses=True,
+        password=settings.JWT_REDIS_PASSWORD,
         socket_connect_timeout=2, socket_timeout=2,
         # Retrying an ambiguously completed rotation can falsely detect replay.
         retry=Retry(NoBackoff(), 0),

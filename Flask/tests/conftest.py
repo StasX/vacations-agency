@@ -5,6 +5,14 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
+def no_redis(monkeypatch):
+    store = MagicMock()
+    store.get.return_value = None
+    monkeypatch.setattr('utils.auth_status.get_redis', lambda: store)
+    return store
+
+
+@pytest.fixture(autouse=True)
 def no_database(monkeypatch):
     monkeypatch.setattr("utils.dal.mysql.connector.connect", MagicMock(
         side_effect=AssertionError("Tests must not connect to MySQL")

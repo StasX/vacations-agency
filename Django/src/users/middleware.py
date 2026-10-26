@@ -5,6 +5,8 @@ from utils.tokens import decode_token, password_fingerprint
 from django.utils.crypto import constant_time_compare
 from users.models import UserModel
 from utils.errors import server_error
+from utils import auth_status
+from redis.exceptions import RedisError
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404
 from django.urls import resolve, Resolver404
@@ -61,7 +63,9 @@ def auth_middleware(get_response):
                     return JsonResponse({"error": "Unauthorized"}, status=401)
                 current = UserModel.objects.select_related('role').filter(pk=user['id']).first()
                 fingerprint = decoded.get('pwd')
-                if (current is None or not current.is_active
+                status = auth_status.get_status(user['id'])
+                if (current is None or not auth_status.is_enabled(status)
+                        or decoded.get('auth_status') != status
                         or current.role.role_type != 'Admin'
                         or not isinstance(fingerprint, str)
                         or not constant_time_compare(fingerprint, password_fingerprint(current))):
@@ -73,6 +77,10 @@ def auth_middleware(get_response):
                 return JsonResponse({"error": "Token expired, refresh required"}, status=406)
             except JWT_ERRORS:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
+            except RedisError:
+                response = JsonResponse({"error": "Authentication temporarily unavailable"}, status=503)
+                response['Retry-After'] = '5'
+                return response
             except Exception:
                 return server_error(request)
         

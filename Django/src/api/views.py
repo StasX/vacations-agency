@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 
 from users.models import UserModel
-from utils import refresh_tokens
+from utils import refresh_tokens, auth_status
 from utils.tokens import issue_tokens, password_fingerprint
 from utils.errors import server_error
 from utils.tokens import decode_token
@@ -56,8 +56,12 @@ def unauthorized():
     return clear_refresh(JsonResponse({'error': 'Unauthorized'}, status=401))
 
 
-def token_response(user, expires_at=None, previous=None):
+def token_response(user, expires_at=None, previous=None, expected_status=None):
     access, refresh, expires_at = issue_tokens(user, expires_at)
+    status = decode_token(access).get('auth_status')
+    if (not auth_status.is_enabled(status)
+            or (expected_status is not None and status != expected_status)):
+        return unauthorized()
     stored = refresh_tokens.rotate(previous, refresh) if previous else refresh_tokens.register(refresh)
     if not stored:
         return unauthorized()
@@ -143,12 +147,14 @@ def refresh_token(request):
         except UserModel.DoesNotExist:
             refresh_tokens.revoke(cookie)
             return unauthorized()
-        if not user.is_active or user.role.role_type != 'Admin' or claims.get('pwd') != password_fingerprint(user):
+        status = auth_status.get_status(user.pk)
+        if (not auth_status.is_enabled(status) or claims.get('auth_status') != status
+                or user.role.role_type != 'Admin' or claims.get('pwd') != password_fingerprint(user)):
             refresh_tokens.revoke(cookie)
             return unauthorized()
         # Preserve the original refresh deadline; refreshing cannot extend it.
         expires_at = datetime.fromtimestamp(claims['exp'], tz=datetime_timezone.utc)
-        return token_response(user, expires_at, previous=cookie)
+        return token_response(user, expires_at, previous=cookie, expected_status=status)
     except jwt.InvalidTokenError:
         return unauthorized()
     except RedisError:

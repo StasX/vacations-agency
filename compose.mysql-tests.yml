@@ -72,6 +72,8 @@ services:
       <<: *test-environment
       TEST_APPLICATION: Flask
     depends_on:
+      redis:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     command: ["tests/mysql/test_flask.py"]

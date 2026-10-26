@@ -83,3 +83,69 @@ def test_close(database):
     dal, connection, _ = database
     dal.close()
     connection.close.assert_called_once_with()
+
+
+def test_transaction_commits_dependent_statements(database):
+    dal, connection, _ = database
+    with dal.transaction():
+        dal.insert('INSERT FIRST')
+        dal.update('UPDATE SECOND')
+        connection.commit.assert_not_called()
+    connection.start_transaction.assert_called_once_with()
+    connection.commit.assert_called_once_with()
+    connection.rollback.assert_not_called()
+
+
+@pytest.mark.parametrize('failure', ['query', 'commit'])
+def test_transaction_rolls_back_failure(database, failure):
+    dal, connection, _ = database
+    error = Error('write failed')
+    if failure == 'query':
+        connection.cursor.return_value.execute.side_effect = [None, error]
+    else:
+        connection.commit.side_effect = error
+    with pytest.raises(Error) as caught:
+        with dal.transaction():
+            dal.insert('FIRST')
+            dal.update('SECOND')
+    assert caught.value is error
+    connection.rollback.assert_called_once_with()
+    assert not dal._in_transaction
+
+
+def test_transaction_never_reconnects_after_connection_loss(database):
+    dal, connection, connector = database
+    with pytest.raises(Error, match='Connection lost'):
+        with dal.transaction():
+            dal.insert('FIRST')
+            connection.is_connected.return_value = False
+            dal.update('SECOND')
+    assert connector.call_count == 1
+    connection.commit.assert_not_called()
+    connection.rollback.assert_called_once_with()
+
+
+def test_nested_transaction_rolls_back_without_inner_commit(database):
+    dal, connection, _ = database
+    with pytest.raises(RuntimeError, match='Nested'):
+        with dal.transaction():
+            with dal.transaction():
+                pass
+    connection.start_transaction.assert_called_once_with()
+    connection.commit.assert_not_called()
+    connection.rollback.assert_called_once_with()
+
+
+def test_like_toggle_rolls_back_when_write_fails(database):
+    from logic.likes_logic import LikesLogic
+    dal, connection, _ = database
+    logic = LikesLogic.__new__(LikesLogic)
+    logic.dal = dal
+    cursor = connection.cursor.return_value
+    cursor.fetchone.side_effect = [{'id': 7}, {'cnt': 0}]
+    cursor.execute.side_effect = [None, None, Error('insert failed')]
+    with pytest.raises(Error, match='insert failed'):
+        logic.like(7, 12)
+    connection.rollback.assert_called_once_with()
+    connection.commit.assert_not_called()
+    assert 'FOR UPDATE' in cursor.execute.call_args_list[0].args[0]

@@ -10,6 +10,24 @@ from django.utils import timezone
 
 from utils import refresh_tokens
 from utils.tokens import decode_token
+from utils import auth_status
+
+
+def test_account_status_is_persistent_and_changes_version(redis_client):
+    from uuid import uuid4
+    user_id = uuid4().int
+    key = auth_status.status_key(user_id)
+    try:
+        assert auth_status.get_status(user_id) == 'enabled:initial'
+        disabled = auth_status.set_enabled(user_id, False)
+        assert auth_status.get_status(user_id) == disabled
+        assert not auth_status.is_enabled(disabled)
+        assert redis_client.pexpiretime(key) == -1
+        enabled = auth_status.set_enabled(user_id, True)
+        assert auth_status.is_enabled(enabled)
+        assert enabled != disabled and enabled != 'enabled:initial'
+    finally:
+        redis_client.delete(key)
 
 
 def test_register_tracks_jti_hash_and_absolute_expiry(redis_client, token_factory):

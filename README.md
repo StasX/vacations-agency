@@ -198,13 +198,17 @@ Compose persists vacation images in the `vacation-images` named volume.
 
 ## Password Storage
 
-For existing MySQL volumes, apply `MySQL/migrations/001_user_active.sql` once
-before deploying these backends. Fresh databases include `users.is_active`
-automatically. Set it to `0` to disable an account. Disabled accounts cannot
-sign in to either application or refresh dashboard sessions. Dashboard requests
-recheck the current account and reject access tokens immediately after account
-deletion, disabling, demotion, or a password change. Previously issued access
-tokens without a password fingerprint require a new login after deployment.
+Account authentication status lives in Redis under `vacations:auth:status:<user_id>`;
+no MySQL schema migration is required. Status keys have no expiry and use the
+persistent Redis volume. From a Django shell, disable an account with
+`from utils.auth_status import set_enabled; set_enabled(7, False)` and enable it
+with `set_enabled(7, True)`. Each status change invalidates earlier dashboard
+tokens and Flask sessions, including after re-enabling. Missing status keys mean
+enabled for existing accounts; do not clear the Redis volume to reset sessions,
+as this also removes disabled-account status. Redis outages block authenticated
+requests. Dashboard requests also recheck MySQL for deletion, role changes, and
+password changes. Previously issued tokens without the status claim require a
+new login.
 
 Flask and Django share PBKDF2-SHA256 password hashes with 1,000,000 iterations
 and a random salt for each password. Existing SHA-512 hashes are upgraded on

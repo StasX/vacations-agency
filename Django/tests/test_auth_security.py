@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 from django.test import Client
 from django.utils import timezone
+from utils import auth_status
 
 
 pytestmark = pytest.mark.django_db
@@ -43,18 +44,19 @@ def test_logout_clears_cookie_without_database_access(client, user, django_asser
     assert client.delete('/api/auth/logout').status_code == 204
 
 
-def test_access_validation_checks_database_without_redis(client, user, django_assert_num_queries, monkeypatch):
+def test_access_validation_checks_database_and_redis(client, user, django_assert_num_queries, redis_store, monkeypatch):
     from django.http import JsonResponse
     from django.test import RequestFactory
     from users.middleware import auth_middleware
     access, _ = sign_in(client, user)
-    def unexpected_redis():
-        pytest.fail('Access validation must not read Redis')
-    monkeypatch.setattr('utils.refresh_tokens.get_redis', unexpected_redis)
+    from unittest.mock import Mock
+    read_status = Mock(wraps=redis_store.get)
+    monkeypatch.setattr(redis_store, 'get', read_status)
     request = RequestFactory().get('/api/users/total', HTTP_AUTHORIZATION=access)
     with django_assert_num_queries(1):
         response = auth_middleware(lambda request: JsonResponse({'ok': True}))(request)
     assert response.status_code == 200
+    read_status.assert_called_once_with(auth_status.status_key(user.pk))
 
 
 @pytest.mark.parametrize('change', ['password', 'role', 'deleted', 'disabled'])
@@ -67,8 +69,7 @@ def test_refresh_rechecks_current_user(client, user, change):
         user.role.role_type = 'User'
         user.role.save()
     elif change == 'disabled':
-        user.is_active = False
-        user.save(update_fields=['is_active'])
+        auth_status.set_enabled(user.pk, False)
     else:
         user.delete()
     assert client.post('/api/auth/refresh-token').status_code == 401
@@ -96,16 +97,14 @@ def test_access_rechecks_current_account(client, user, change, path):
         user.role.role_type = 'User'
         user.role.save()
     elif change == 'disabled':
-        user.is_active = False
-        user.save(update_fields=['is_active'])
+        auth_status.set_enabled(user.pk, False)
     else:
         user.delete()
     assert client.get(path, HTTP_AUTHORIZATION=access).status_code == 401
 
 
 def test_disabled_account_cannot_login(client, user):
-    user.is_active = False
-    user.save(update_fields=['is_active'])
+    auth_status.set_enabled(user.pk, False)
     response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
                            content_type='application/json')
     assert response.status_code == 400

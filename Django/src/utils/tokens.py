@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 
 from .app_config import AppConfig
+from . import auth_status
 
 
 def decode_token(token):
@@ -35,6 +36,7 @@ def issue_tokens(user, expires_at=None):
         'iat': now, 'iss': AppConfig.issuer, 'aud': AppConfig.audience,
         'jti': str(uuid4()),
         'pwd': password_fingerprint(user),
+        'auth_status': auth_status.get_status(user.pk),
     }
     access = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
     payload.update(type='refresh', jti=str(uuid4()), exp=expires_at,

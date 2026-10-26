@@ -32,6 +32,7 @@ Use pytest from this directory; `manage.py test` does not collect this suite.
 
 Auth tests include enforced CSRF,
 database-backed access validation, Redis refresh rotation/revocation, current-user checks,
+Redis account disabling and status version changes across access/refresh tokens,
 and absolute expiry. Redis tests use isolated fakeredis with Lua support; no real
 Redis service is contacted.
 

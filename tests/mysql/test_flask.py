@@ -54,6 +54,27 @@ def test_real_driver_round_trips_dates_prices_and_parameterized_values(sql):
         dal.close()
 
 
+@pytest.mark.parametrize('fail', [False, True])
+def test_real_transaction_commits_or_rolls_back_dependent_writes(sql, trip, fail):
+    dal = DAL()
+    try:
+        try:
+            with dal.transaction():
+                dal.update('UPDATE vacations SET description=%s WHERE id=%s', ('Changed', trip))
+                dal.update('UPDATE vacations SET price=%s WHERE id=%s', (42, trip))
+                if fail:
+                    raise RuntimeError('abort dependent writes')
+        except RuntimeError:
+            if not fail:
+                raise
+        sql.execute('SELECT description, price FROM vacations WHERE id=%s', (trip,))
+        description, price = sql.fetchone()
+        assert description == ('MySQL holiday' if fail else 'Changed')
+        assert float(price) == pytest.approx(123.45 if fail else 42)
+    finally:
+        dal.close()
+
+
 def test_real_mysql_rejects_duplicate_likes_and_toggle_removes_only_one(admin, trip, sql):
     sql.execute('INSERT INTO vacations (country_id,description,start_date,end_date,price,image) VALUES (2,%s,%s,%s,100,%s)',
                 ('Another trip', '2099-01-01', '2099-01-02', 'trip.jpg'))
@@ -69,6 +90,26 @@ def test_real_mysql_rejects_duplicate_likes_and_toggle_removes_only_one(admin, t
     assert sql.fetchall() == [(second,)]
 
 
+def test_concurrent_like_toggles_are_serialized(admin, trip, sql):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    ready = Barrier(2)
+    def toggle():
+        logic = LikesLogic()
+        try:
+            ready.wait(timeout=10)
+            logic.like(admin, trip)
+        finally:
+            logic.dal.close()
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        futures = [workers.submit(toggle) for _ in range(2)]
+        for future in futures:
+            future.result(timeout=30)
+    sql.execute('SELECT COUNT(*) FROM likes WHERE user_id=%s AND vacation_id=%s', (admin, trip))
+    assert sql.fetchone()[0] == 0
+
+
 def test_authenticated_request_closes_real_mysql_connection(client, admin):
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
@@ -81,6 +122,21 @@ def test_authenticated_request_closes_real_mysql_connection(client, admin):
         assert client.get('/vacations').status_code == 200
     assert seen
     assert all(not connection.is_connected() for connection in seen)
+
+
+def test_redis_disabled_status_blocks_flask_session(client, admin):
+    from utils.auth_status import get_redis
+    store = get_redis()
+    key = f'vacations:auth:status:{admin}'
+    with client.session_transaction() as session:
+        session['current_user'] = {'id': admin, 'role': 1}
+    try:
+        store.set(key, 'disabled:integration-test')
+        assert client.get('/vacations').status_code == 302
+        with client.session_transaction() as session:
+            assert 'current_user' not in session
+    finally:
+        store.delete(key)
 
 
 def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, admin, trip, sql):

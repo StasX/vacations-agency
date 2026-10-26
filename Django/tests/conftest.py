@@ -12,7 +12,7 @@ from likes.models import LikeModel
 from utils.app_config import AppConfig
 from utils.security import Security
 from utils.tokens import password_fingerprint
-from utils import refresh_tokens
+from utils import refresh_tokens, auth_status
 
 
 @pytest.fixture(autouse=True)
@@ -38,6 +38,7 @@ def token_factory(db):
         payload = dict(type='access', user={'id': 1, 'role': 'Admin'},
                        exp=now + timedelta(minutes=10), iat=now,
                        iss=AppConfig.issuer, aud=AppConfig.audience, jti=str(uuid4()))
+        payload['auth_status'] = auth_status.get_status(1)
         payload.update(claims)
         member = UserModel.objects.filter(pk=1).first()
         if member:

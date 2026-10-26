@@ -23,7 +23,7 @@ The suite covers all Python application layers and both JavaScript files:
 | Images | Unique names, basename handling, empty uploads, replacement, missing files, save failures, fallback |
 | JavaScript | Form validation, country selection, date checks, modal actions, delete confirmation, file preview, price formatting, page initialization, password visibility |
 
-Database access is mocked and attempts to connect to MySQL fail immediately.
+Database and Redis access are mocked; attempts to connect to MySQL fail immediately.
 The DAL tests replace the connector with fake connections and cursors. Uploads
 and log files use pytest's temporary directories. Session secrets and password
 salt are test-only values; no running services or database credentials are required.
@@ -48,3 +48,12 @@ Docker startup, browser rendering, and external CDN availability are not tested.
 
 The separate [MySQL integration suite](../../tests/mysql/README.md) exercises the
 real DAL, shared SQL schema, request cleanup, and Docker services.
+
+Dependent writes use `DAL.transaction()`: success commits, failures roll back,
+and a lost connection cannot reconnect mid-transaction. Nested transactions are
+rejected. Like toggles lock the user row; vacation edits and deletes lock the
+vacation row. Registration commits before creating the browser session, and
+login locks the account while verifying/upgrading its password. Image files
+remain outside SQL transactions; new uploads are cleaned up on write failure,
+and old files are removed only after commit. Real MySQL tests cover rollback,
+commit, and concurrent like toggles.

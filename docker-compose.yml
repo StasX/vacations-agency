@@ -79,6 +79,8 @@ services:
   # Flask service: 
   vacations-catalog:
     depends_on:
+      vacations-redis:
+        condition: service_healthy
       vacations-database:
         condition: service_healthy
     image: sm1986/vacations-catalog:1.0
@@ -92,11 +94,16 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      JWT_REDIS_URL: redis://vacations-redis:6379/0
+      JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       FLASK_COOKIE_SECURE: ${FLASK_COOKIE_SECURE:-true}
       PASSWORDS_SALT: ${PASSWORDS_SALT}
     restart: unless-stopped
     ports:
       - 5000:5000
+    networks:
+      - default
+      - redis-backend
 
   # ------------------------------------------------------------------------------------------
 

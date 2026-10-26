@@ -55,38 +55,37 @@ class VacationsLogic:
             raise
 
     def update_vacation(self, vacation):
-        # Update image
-        old_image = self.get_old_image_name(vacation.id)
-        image_name = ImageHandler.save_image(vacation.image) or old_image
-        # Update vacation
-        sql = "UPDATE vacations SET country_id = %s, description = %s, start_date = %s, end_date = %s, price = %s, image = %s WHERE id = %s"
-        params = (vacation.country, vacation.description,
-                  vacation.start_date, vacation.end_date, vacation.price, image_name, vacation.id)
+        old_image = None
+        image_name = None
         try:
-            if self.dal.update(sql, params) == 0:
-                # MySQL also returns zero for an unchanged row; check existence.
-                self.get_one_vacation(vacation.id)
+            with self.dal.transaction():
+                old_image = self.get_old_image_name(vacation.id, for_update=True)
+                image_name = ImageHandler.save_image(vacation.image) or old_image
+                sql = "UPDATE vacations SET country_id = %s, description = %s, start_date = %s, end_date = %s, price = %s, image = %s WHERE id = %s"
+                params = (vacation.country, vacation.description, vacation.start_date,
+                          vacation.end_date, vacation.price, image_name, vacation.id)
+                if self.dal.update(sql, params) == 0:
+                    self.get_one_vacation(vacation.id)
         except Exception:
-            if image_name != old_image:
+            if image_name and image_name != old_image:
                 ImageHandler.delete_image(image_name)
             raise
         if image_name != old_image:
             ImageHandler.delete_image(old_image)
 
     def delete_vacation(self, id):
-        # Delete image
-        old_image = self.get_old_image_name(id)
-        # Delete vacation
-        sql = "DELETE FROM vacations WHERE id = %s"
-        params = (id,)
-        row_count = self.dal.delete(sql, params)
-        if row_count == 0:
-            raise ResourceNotFoundError(id)
+        with self.dal.transaction():
+            old_image = self.get_old_image_name(id, for_update=True)
+            row_count = self.dal.delete("DELETE FROM vacations WHERE id = %s", (id,))
+            if row_count == 0:
+                raise ResourceNotFoundError(id)
         ImageHandler.delete_image(old_image)
         return row_count
 
-    def get_old_image_name(self, id):
+    def get_old_image_name(self, id, for_update=False):
         sql = "SELECT image FROM vacations WHERE id=%s"
+        if for_update:
+            sql += " FOR UPDATE"
         params = (id,)
         old_image_name = self.dal.get_scalar(sql, params)
         if old_image_name is None:

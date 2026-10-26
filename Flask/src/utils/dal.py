@@ -1,5 +1,6 @@
 import mysql.connector
 import logging
+from contextlib import contextmanager
 from flask import g, has_request_context
 from utils.app_config import AppConfig
 
@@ -17,6 +18,7 @@ def close_request_connections(error=None):
 class DAL:
     def __init__(self):
         self.connection = None
+        self._in_transaction = False
         self.__connect()
         if has_request_context():
             if '_database_handles' not in g:
@@ -38,9 +40,35 @@ class DAL:
             connection_timeout=30
         )
 
-    def get_table(self, sql, params=None):
+    def _ensure_connection(self):
         if self.connection is None or not self.connection.is_connected():
+            if self._in_transaction:
+                raise mysql.connector.Error('Connection lost during transaction')
             self.__connect()
+
+    @contextmanager
+    def transaction(self):
+        """Commit dependent statements together; never reconnect mid-transaction."""
+        if self._in_transaction:
+            raise RuntimeError('Nested transactions are not supported')
+        self._ensure_connection()
+        connection = self.connection
+        connection.start_transaction()
+        self._in_transaction = True
+        try:
+            yield self
+            connection.commit()
+        except BaseException:
+            try:
+                connection.rollback()
+            except Exception:
+                logging.getLogger(__name__).exception('Transaction rollback failed')
+            raise
+        finally:
+            self._in_transaction = False
+
+    def get_table(self, sql, params=None):
+        self._ensure_connection()
         cursor = self.connection.cursor(dictionary=True)
         try:
             cursor.execute(sql, params)
@@ -49,8 +77,7 @@ class DAL:
             cursor.close()
 
     def get_scalar(self, sql, params=None):
-        if self.connection is None or not self.connection.is_connected():
-            self.__connect()
+        self._ensure_connection()
         cursor = self.connection.cursor(dictionary=True)
         try:
             cursor.execute(sql, params)
@@ -59,8 +86,7 @@ class DAL:
             cursor.close()
 
     def insert(self, sql, params=None):
-        if self.connection is None or not self.connection.is_connected():
-            self.__connect()
+        self._ensure_connection()
         cursor = self.connection.cursor()
         try:
             cursor.execute(sql, params)
@@ -69,8 +95,7 @@ class DAL:
             cursor.close()
 
     def update(self, sql, params=None):
-        if self.connection is None or not self.connection.is_connected():
-            self.__connect()
+        self._ensure_connection()
         cursor = self.connection.cursor()
         try:
             cursor.execute(sql, params)
@@ -79,8 +104,7 @@ class DAL:
             cursor.close()
 
     def delete(self, sql, params=None):
-        if self.connection is None or not self.connection.is_connected():
-            self.__connect()
+        self._ensure_connection()
         cursor = self.connection.cursor()
         try:
             cursor.execute(sql, params)

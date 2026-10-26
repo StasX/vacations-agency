@@ -12,8 +12,10 @@ class AuthLogic:
         last_inserted_id = self.dal.insert(sql, params)
         return last_inserted_id
 
-    def get_user(self, credentials):
-        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s AND is_active=1"
+    def get_user(self, credentials, for_update=False):
+        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s"
+        if for_update:
+            sql += " FOR UPDATE"
         params = (credentials.email,)
         user = self.dal.get_scalar(sql, params)
         return user

@@ -49,8 +49,8 @@ storage, and the real Redux store. External HTTP and charts remain mocked.
 - Utilities: document title updates and error notifications.
 
 HTTP calls and chart rendering are mocked; routing, Redux, form validation,
-and Material UI components run normally in jsdom. Timers are controlled to
-exercise refresh and delayed rendering without real waits. These are unit and
+and Material UI components run normally in jsdom. Deferred promises exercise
+refresh/retry coordination; controlled timers cover delayed UI rendering. These are unit and
 component integration tests, not browser or live-backend end-to-end tests.
 Coverage excludes the entry point, generated declarations, test setup, and
 the unused CRA web-vitals helper. View `coverage/lcov-report/index.html` for details.
@@ -61,9 +61,10 @@ Jest transpiles TypeScript; it does not run the TypeScript compiler.
 
 ## Regression tests
 
-All 74 tests pass; none are skipped. Regression coverage includes empty session
+All 85 tests pass; none are skipped. Regression coverage includes empty session
 state, logout cookies, malformed saved tokens, refresh completion before retries,
-statistics rendering, and header timer cleanup.
+bounded retries, concurrent refresh failures, stale responses, statistics rendering,
+and header timer cleanup.
 
 Redux serializability warnings may appear for existing model instances.
 The shared tsconfig.json includes src and tests. Run npx tsc --noEmit to

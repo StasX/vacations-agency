@@ -13,5 +13,5 @@ urlpatterns = [
     path("api/users/", include("users.urls")),
     path("api/likes/", include("likes.urls")),
     re_path(r'^api/.*', catch_all),  # Catch-all for API routes
-    re_path(r'^.*$', health_check),  # Fallback for all other routes
+    re_path(r'^.*$', catch_all),  # Unknown routes must not look healthy
 ]

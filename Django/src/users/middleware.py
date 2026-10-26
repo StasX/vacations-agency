@@ -5,6 +5,7 @@ from utils.tokens import decode_token
 from utils.errors import server_error
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404
+from django.urls import resolve, Resolver404
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError, DecodeError, InvalidSignatureError, InvalidAudienceError, InvalidIssuerError, ImmatureSignatureError, MissingRequiredClaimError, PyJWTError
 
@@ -36,10 +37,12 @@ def fix_response_middleware(get_response):
 def auth_middleware(get_response):
 
     def middleware(request):
-        # Skip auth check for these paths
-        public_paths = ["/", "/api/auth/csrf", "/api/auth/login", "/api/auth/refresh-token", "/api/auth/logout"]
-        
-        if request.path not in public_paths:
+        # Authenticate resolved statistics views; admin owns its authentication.
+        try:
+            view = resolve(request.path_info).func
+        except Resolver404:
+            return get_response(request)
+        if view.__module__ in {"users.views", "likes.views", "vacations.views"}:
             token = request.headers.get("Authorization")
             if not token:
                 return JsonResponse({"error": "Unauthorized"}, status=401)

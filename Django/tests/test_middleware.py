@@ -7,7 +7,23 @@ from django.test import RequestFactory
 from users.middleware import auth_middleware, fix_response_middleware
 
 PROTECTED = ['/api/users/total', '/api/likes/total', '/api/likes/statistics',
-             '/api/vacations/statistics', '/admin/']
+             '/api/vacations/statistics']
+
+
+def test_admin_uses_django_login(client):
+    response = client.get('/admin/')
+    assert response.status_code == 302
+    assert response.url == '/admin/login/?next=/admin/'
+
+
+@pytest.mark.parametrize('path', ['/admin/login/', '/admin/'])
+def test_admin_bypasses_jwt_validation(path, monkeypatch):
+    def unexpected_decode(token):
+        pytest.fail('Admin must use Django authentication, not JWT validation')
+    monkeypatch.setattr('users.middleware.decode_token', unexpected_decode)
+    response = JsonResponse({'downstream': True})
+    request = RequestFactory().get(path, HTTP_AUTHORIZATION='invalid-token')
+    assert auth_middleware(lambda req: response)(request) is response
 
 
 @pytest.mark.parametrize('path', PROTECTED)

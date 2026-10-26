@@ -12,5 +12,6 @@ pluggy==1.7.0
 Pygments==2.21.0
 PyJWT==2.15.1
 python-dotenv==1.2.4
+redis==8.1.0
 sqlparse==0.6.0
 tzdata==2026.5

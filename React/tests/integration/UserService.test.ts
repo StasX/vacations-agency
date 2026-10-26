@@ -6,7 +6,7 @@ import { appConfig } from '../../src/Utils/AppConfig';
 test('logout includes cookies so Django can delete the refresh cookie', async () => {
     jest.mocked(axios.delete).mockResolvedValue({});
     await userService.logout();
-    expect(axios.delete).toHaveBeenCalledWith(appConfig.logoutUrl, { withCredentials: true });
+    expect(axios.delete).toHaveBeenCalledWith(appConfig.logoutUrl, { withCredentials: true, headers: { "X-CSRFToken": "test-csrf" } });
 });
 
 test('a malformed saved token does not crash startup', () => {
@@ -25,6 +25,7 @@ afterAll(() => { Object.defineProperty(window, 'location', { configurable: true,
 
 beforeEach(() => {
     jest.resetAllMocks();
+    jest.mocked(axios.get).mockResolvedValue({ data: { csrf_token: "test-csrf" } });
     localStorage.clear();
     store.dispatch(userActions.logout(undefined));
 });
@@ -34,7 +35,7 @@ test('login sends credentials with cookies and persists the decoded user', async
     const credentials = { email: user.email, password: 'secret' };
     jest.mocked(axios.post).mockResolvedValue({ data: { access_token: token } });
     await userService.login(credentials);
-    expect(axios.post).toHaveBeenCalledWith(appConfig.loginUrl, credentials, { withCredentials: true });
+    expect(axios.post).toHaveBeenCalledWith(appConfig.loginUrl, credentials, { withCredentials: true, headers: { "X-CSRFToken": "test-csrf" } });
     expect(localStorage.getItem('token')).toBe(token);
     expect(store.getState().user).toEqual(user);
 });
@@ -64,9 +65,9 @@ test('logout clears the local session after a successful response', async () => 
 
 test('refresh replaces the token and user using the refresh cookie', async () => {
     const token = tokenFor(user);
-    jest.mocked(axios.get).mockResolvedValue({ data: { access_token: token } });
+    jest.mocked(axios.post).mockResolvedValue({ data: { access_token: token } });
     await userService.refreshToken();
-    expect(axios.get).toHaveBeenCalledWith(appConfig.refreshUrl, { withCredentials: true });
+    expect(axios.post).toHaveBeenCalledWith(appConfig.refreshUrl, {}, { withCredentials: true, headers: { "X-CSRFToken": "test-csrf" } });
     expect(localStorage.getItem('token')).toBe(token);
     expect(store.getState().user).toEqual(user);
 });
@@ -82,9 +83,9 @@ test('startup restores a saved session', () => {
 test('a rejected refresh logs out and redirects to login', async () => {
     localStorage.setItem('token', tokenFor(user));
     store.dispatch(userActions.login(user));
-    jest.mocked(axios.get).mockRejectedValue({ response: { status: 401 } });
+    jest.mocked(axios.post).mockRejectedValue({ response: { status: 401 } });
     jest.mocked(axios.delete).mockResolvedValue({});
-    await userService.refreshToken();
+    await expect(userService.refreshToken()).rejects.toMatchObject({ response: { status: 401 } });
     expect(window.location.href).toBe('http://localhost/login');
     expect(store.getState().user).toBeNull();
     expect(localStorage.getItem('token')).toBeNull();
@@ -95,8 +96,45 @@ test('a temporary refresh failure preserves the existing session', async () => {
     localStorage.setItem('token', token);
     store.dispatch(userActions.login(user));
     jest.mocked(axios.get).mockRejectedValue(new Error('offline'));
-    await userService.refreshToken();
+    await expect(userService.refreshToken()).rejects.toThrow('offline');
     expect(localStorage.getItem('token')).toBe(token);
     expect(store.getState().user).toEqual(user);
     expect(axios.delete).not.toHaveBeenCalled();
+});
+
+test('concurrent refresh callers share one CSRF fetch and one rotation', async () => {
+    const token = tokenFor(user);
+    jest.mocked(axios.post).mockResolvedValue({ data: { access_token: token } });
+    await Promise.all([userService.refreshToken(), userService.refreshToken(), userService.refreshToken()]);
+    expect(axios.get).toHaveBeenCalledTimes(1);
+    expect(axios.get).toHaveBeenCalledWith(appConfig.csrfUrl, { withCredentials: true });
+    expect(axios.post).toHaveBeenCalledTimes(1);
+});
+
+test('logout clears local authentication even when the server is unavailable', async () => {
+    localStorage.setItem('token', tokenFor(user));
+    store.dispatch(userActions.login(user));
+    jest.mocked(axios.delete).mockRejectedValue(new Error('offline'));
+    await expect(userService.logout()).rejects.toThrow('offline');
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(store.getState().user).toBeNull();
+});
+
+test('a late refresh cannot restore the session after logout', async () => {
+    const token = tokenFor(user);
+    localStorage.setItem('token', token);
+    store.dispatch(userActions.login(user));
+    let finish!: (response: { data: { access_token: string } }) => void;
+    jest.mocked(axios.post).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    jest.mocked(axios.delete).mockResolvedValue({});
+    const refresh = userService.refreshToken();
+    const rejected = expect(refresh).rejects.toThrow('Session changed during refresh');
+    await Promise.resolve();
+    await Promise.resolve();
+    const logout = userService.logout();
+    finish({ data: { access_token: token } });
+    await rejected;
+    await logout;
+    expect(localStorage.getItem('token')).toBeNull();
+    expect(store.getState().user).toBeNull();
 });

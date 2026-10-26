@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
-from .views import logout, login, refresh_token, catch_all, health_check
+from .views import logout, login, refresh_token, catch_all, health_check, csrf_token
 
 urlpatterns = [
     path('', health_check, name='health_check'),  # Root endpoint
     path('admin/', admin.site.urls),
     path("api/auth/login", login),
+    path("api/auth/csrf", csrf_token),
     path("api/auth/logout", logout),
     path("api/auth/refresh-token", refresh_token),
     path("api/vacations/", include("vacations.urls")),

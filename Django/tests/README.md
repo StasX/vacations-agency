@@ -26,3 +26,9 @@ fixed, remove its marker (an unexpected pass fails the suite).
 Password tests cover randomized hashing, shared Flask/Django compatibility,
 legacy hash upgrades, rejected passwords, and malformed hashes.
 Use pytest from this directory; `manage.py test` does not collect this suite.
+
+Authentication deployment and client protocol are documented in
+[`../AUTHENTICATION.md`](../AUTHENTICATION.md). Auth tests include enforced CSRF,
+stateless access validation, Redis refresh rotation/revocation, current-user checks,
+and absolute expiry. Redis tests use isolated fakeredis with Lua support; no real
+Redis service is contacted.

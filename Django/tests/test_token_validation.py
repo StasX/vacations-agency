@@ -19,8 +19,8 @@ def test_invalid_session_claims_are_rejected(client, token_factory, refresh, def
     token = jwt.encode(payload, AppConfig.secret_key, algorithm=algorithm)
     if refresh:
         client.cookies["refresh"] = token
-        response = client.get("/api/auth/refresh-token")
-        assert "refresh" not in response.cookies
+        response = client.post("/api/auth/refresh-token")
+        assert "refresh" not in response.cookies or response.cookies["refresh"]["max-age"] == 0
     else:
         response = client.get("/api/users/total", HTTP_AUTHORIZATION=token)
     assert response.status_code == 401
@@ -36,11 +36,11 @@ def test_invalid_credentials_are_rejected_before_authentication(client, monkeypa
     monkeypatch.setattr("api.views.authenticate", unexpected_authentication)
     response = client.post("/api/auth/login", credentials, content_type="application/json")
     assert response.status_code == 400
-    assert "refresh" not in response.cookies
+    assert "refresh" not in response.cookies or response.cookies["refresh"]["max-age"] == 0
 
 
-def test_refreshed_cookie_matches_token_lifetime(client, token_factory):
+def test_refreshed_cookie_matches_token_lifetime(client, user, token_factory):
     client.cookies["refresh"] = token_factory(type="refresh")
-    response = client.get("/api/auth/refresh-token")
+    response = client.post("/api/auth/refresh-token")
     assert response.status_code == 200
-    assert response.cookies["refresh"]["max-age"] == 3600
+    assert 0 < response.cookies["refresh"]["max-age"] <= 600

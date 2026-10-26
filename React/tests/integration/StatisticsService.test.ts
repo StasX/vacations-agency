@@ -45,6 +45,7 @@ afterAll(() => { Object.defineProperty(window, 'location', { configurable: true,
 
 beforeEach(() => {
     jest.resetAllMocks();
+    jest.mocked(userService.logout).mockResolvedValue(undefined);
     jest.useFakeTimers();
     localStorage.clear();
     Reflect.set(statisticsService, 'canRefreshToken', true);
@@ -118,4 +119,16 @@ test('simultaneous unauthorized responses only trigger one logout', async () => 
     jest.mocked(axios.get).mockRejectedValue({ response: { status: 401 } });
     await Promise.all(endpoints.map(([method]) => statisticsService[method]()));
     expect(userService.logout).toHaveBeenCalledTimes(1);
+});
+
+test('failed refresh does not schedule retries and permits a later attempt', async () => {
+    localStorage.setItem('token', 'expired');
+    jest.mocked(axios.get).mockRejectedValue({ response: { status: 406 } });
+    jest.mocked(userService.refreshToken).mockRejectedValue(new Error('offline'));
+    await statisticsService.getUsersCount();
+    await Promise.resolve();
+    jest.mocked(axios.get).mockClear();
+    jest.advanceTimersByTime(2000);
+    expect(axios.get).not.toHaveBeenCalled();
+    expect(Reflect.get(statisticsService, 'canRefreshToken')).toBe(true);
 });

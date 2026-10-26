@@ -1,5 +1,17 @@
 services:
 
+  vacations-redis:
+    image: redis:8.2-alpine
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "always", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-volume:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
   # MySQL service: 
   vacations-database:
     image: sm1986/vacations-database:1.0
@@ -25,6 +37,8 @@ services:
   # Django service: 
   vacations-statistics:
     depends_on:
+      vacations-redis:
+        condition: service_healthy
       vacations-database:
         condition: service_healthy
     image: sm1986/vacations-statistics:1.0
@@ -32,8 +46,11 @@ services:
     container_name: vacations-statistics
     environment:
       DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      JWT_REDIS_URL: redis://vacations-redis:6379/0
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
       DJANGO_CORS_ALLOWED_ORIGINS: ${DJANGO_CORS_ALLOWED_ORIGINS:-}
+      DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-true}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
       MYSQL_HOST: vacations-database
       MYSQL_PORT: ${MYSQL_PORT}
       MYSQL_USER: ${MYSQL_USER}
@@ -87,5 +104,6 @@ services:
 
 # List of all volumes: 
 volumes:
+  redis-volume:
   vacations-volume:
   vacation-images:

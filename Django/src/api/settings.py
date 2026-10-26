@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = AppConfig.secret_key
+JWT_REDIS_URL = environ.get('JWT_REDIS_URL', 'redis://localhost:6379/0')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environ.get('DJANGO_DEBUG', 'false').strip().lower() in ('true', '1', 'yes', 'on')
@@ -61,7 +62,16 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'none'
+SESSION_COOKIE_SAMESITE = 'Lax'
+AUTH_COOKIE_SECURE = environ.get('DJANGO_COOKIE_SECURE', 'true').strip().lower() in ('true', '1', 'yes', 'on')
+CSRF_COOKIE_SECURE = AUTH_COOKIE_SECURE
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_FAILURE_VIEW = 'api.views.csrf_failure'
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in
+    environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
+]
 
 
 ROOT_URLCONF = 'api.urls'

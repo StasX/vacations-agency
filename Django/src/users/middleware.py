@@ -37,7 +37,7 @@ def auth_middleware(get_response):
 
     def middleware(request):
         # Skip auth check for these paths
-        public_paths = ["/", "/api/auth/login", "/api/auth/refresh-token", "/api/auth/logout"]
+        public_paths = ["/", "/api/auth/csrf", "/api/auth/login", "/api/auth/refresh-token", "/api/auth/logout"]
         
         if request.path not in public_paths:
             token = request.headers.get("Authorization")

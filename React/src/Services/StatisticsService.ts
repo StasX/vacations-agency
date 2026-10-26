@@ -24,7 +24,7 @@ class StatisticsService {
             if (err?.response?.status === 406 && this.canRefreshToken) {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
-                this.goToLogin();
+                await this.goToLogin();
             } else {
                 notify.error();
             }
@@ -41,7 +41,7 @@ class StatisticsService {
             if (err?.response?.status === 406 && this.canRefreshToken) {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
-                this.goToLogin();
+                await this.goToLogin();
             } else {
                 notify.error();
             }
@@ -59,7 +59,7 @@ class StatisticsService {
             if (err?.response?.status === 406 && this.canRefreshToken) {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
-                this.goToLogin();
+                await this.goToLogin();
             } else {
                 notify.error();
             }
@@ -84,7 +84,7 @@ class StatisticsService {
             if (err?.response?.status === 406 && this.canRefreshToken) {
                 this.refreshToken();
             } else if (err?.response?.status === 401 && this.canGoToLogin) {
-                this.goToLogin();
+                await this.goToLogin();
             } else {
                 notify.error();
             }
@@ -93,7 +93,13 @@ class StatisticsService {
     private async refreshToken() {
         if (!this.canRefreshToken) return;
         this.canRefreshToken = false;
-        await userService.refreshToken();
+        try {
+            await userService.refreshToken();
+        } catch {
+            this.canRefreshToken = true;
+            notify.error();
+            return;
+        }
         setTimeout(() => {
             this.getLikesCount();
             this.getLikesStatistics();
@@ -102,11 +108,16 @@ class StatisticsService {
             this.canRefreshToken = true;
         }, 1000);
     }
-    private goToLogin() {
+    private async goToLogin() {
         if (!this.canGoToLogin) return;
         this.canGoToLogin = false;
-        userService.logout();
-        window.location.href = `${window.location.origin}/login`;
+        try {
+            await userService.logout();
+        } catch {
+            notify.error();
+        } finally {
+            window.location.href = `${window.location.origin}/login`;
+        }
         setTimeout(() => {
             this.canGoToLogin = true;
         }, 5000);

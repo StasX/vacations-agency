@@ -9,16 +9,15 @@ from redis.retry import Retry
 from .tokens import decode_token
 
 
-# Compare and replace atomically across all workers; preserve the original TTL.
-# A replay deletes the family so its newest refresh token is rejected too.
+# Consume the old JTI and register the new JTI atomically, preserving expiry.
 ROTATE_SCRIPT = '''
 local current = redis.call('GET', KEYS[1])
-if not current then return 0 end
-if current ~= ARGV[1] then
-    redis.call('DEL', KEYS[1])
-    return 0
-end
-redis.call('SET', KEYS[1], ARGV[2], 'KEEPTTL')
+if not current or current ~= ARGV[1] then return 0 end
+local deadline = redis.call('PEXPIRETIME', KEYS[1])
+if deadline <= 0 then return 0 end
+local created = redis.call('SET', KEYS[2], ARGV[2], 'PXAT', deadline, 'NX')
+if not created then return 0 end
+redis.call('DEL', KEYS[1])
 return 1
 '''
 
@@ -34,7 +33,7 @@ def get_redis():
 
 
 def token_key(claims):
-    return 'vacations:jwt:refresh:' + claims['sid']
+    return 'vacations:jwt:refresh:' + claims['jti']
 
 
 def fingerprint(token):
@@ -49,7 +48,8 @@ def register(token):
 
 def rotate(previous, replacement):
     claims = decode_token(previous)
-    return bool(get_redis().eval(ROTATE_SCRIPT, 1, token_key(claims),
+    next_claims = decode_token(replacement)
+    return bool(get_redis().eval(ROTATE_SCRIPT, 2, token_key(claims), token_key(next_claims),
                                 fingerprint(previous), fingerprint(replacement)))
 
 

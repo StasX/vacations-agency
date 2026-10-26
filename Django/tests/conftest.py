@@ -37,13 +37,11 @@ def token_factory(db):
         now = datetime.now(timezone.utc)
         payload = dict(type='access', user={'id': 1, 'role': 'Admin'},
                        exp=now + timedelta(minutes=10), iat=now,
-                       iss=AppConfig.issuer, aud=AppConfig.audience, jti='test-id')
+                       iss=AppConfig.issuer, aud=AppConfig.audience, jti=str(uuid4()))
         payload.update(claims)
         member = UserModel.objects.filter(pk=1).first()
         if payload.get('type') == 'refresh' and member:
             payload.setdefault('pwd', password_fingerprint(member))
-        if payload.get('type') == 'refresh':
-            payload.setdefault('sid', str(uuid4()))
         token = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
         if payload.get('type') == 'refresh':
             try:

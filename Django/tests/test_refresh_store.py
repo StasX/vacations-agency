@@ -12,7 +12,10 @@ from utils.tokens import decode_token, issue_tokens
 def test_redis_stores_only_fingerprint_with_absolute_expiry(user, redis_store):
     _, token, expiry = issue_tokens(user, timezone.now() + timedelta(seconds=90))
     assert refresh_tokens.register(token)
-    key = refresh_tokens.token_key(decode_token(token))
+    claims = decode_token(token)
+    key = refresh_tokens.token_key(claims)
+    assert key == 'vacations:jwt:refresh:' + claims['jti']
+    assert 'sid' not in claims
     assert redis_store.get(key) == refresh_tokens.fingerprint(token)
     assert redis_store.expiretime(key) == int(expiry.timestamp())
     assert not refresh_tokens.register(token)
@@ -21,25 +24,28 @@ def test_redis_stores_only_fingerprint_with_absolute_expiry(user, redis_store):
 def test_rotation_is_atomic_and_preserves_deadline(user, redis_store):
     _, original, expiry = issue_tokens(user)
     claims = decode_token(original)
-    _, replacement, _ = issue_tokens(user, expiry, claims['sid'])
+    _, replacement, _ = issue_tokens(user, expiry)
     refresh_tokens.register(original)
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(lambda _: refresh_tokens.rotate(original, replacement), range(2)))
     assert sorted(results) == [False, True]
-    # The second use revokes the family, including the winner's replacement.
-    assert not refresh_tokens.rotate(replacement, original)
+    # A replay cannot consume or revoke the winner's independently tracked JTI.
+    assert redis_store.get(refresh_tokens.token_key(decode_token(replacement))) is not None
+    assert not redis_store.exists(refresh_tokens.token_key(claims))
 
 
 def test_rotation_keeps_ttl_and_unknown_tokens_cannot_register_themselves(user, redis_store):
     _, original, expiry = issue_tokens(user)
     claims = decode_token(original)
-    _, replacement, _ = issue_tokens(user, expiry, claims['sid'])
+    _, replacement, _ = issue_tokens(user, expiry)
     assert not refresh_tokens.rotate(original, replacement)
     refresh_tokens.register(original)
     key = refresh_tokens.token_key(claims)
     deadline = redis_store.expiretime(key)
     assert refresh_tokens.rotate(original, replacement)
-    assert redis_store.expiretime(key) == deadline
+    assert not redis_store.exists(key)
+    new_key = refresh_tokens.token_key(decode_token(replacement))
+    assert redis_store.expiretime(new_key) == deadline
 
 
 @pytest.mark.parametrize('operation', ['login', 'refresh-token', 'logout'])
@@ -64,12 +70,11 @@ def test_redis_outage_fails_closed(client, user, redis_store, monkeypatch, opera
     assert 'refresh' not in response.cookies
 
 
-def test_logout_revokes_latest_refresh_using_an_older_family_token(client, user):
+def test_logout_revokes_current_refresh_jti(client, user):
     response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
                            content_type='application/json')
     original = response.cookies['refresh'].value
     latest = client.post('/api/auth/refresh-token').cookies['refresh'].value
-    client.cookies['refresh'] = original
     assert client.delete('/api/auth/logout').status_code == 204
     client.cookies['refresh'] = latest
     assert client.post('/api/auth/refresh-token').status_code == 401

@@ -57,8 +57,7 @@ def unauthorized():
 
 
 def token_response(user, expires_at=None, previous=None):
-    sid = decode_token(previous)['sid'] if previous else None
-    access, refresh, expires_at = issue_tokens(user, expires_at, sid)
+    access, refresh, expires_at = issue_tokens(user, expires_at)
     stored = refresh_tokens.rotate(previous, refresh) if previous else refresh_tokens.register(refresh)
     if not stored:
         return unauthorized()

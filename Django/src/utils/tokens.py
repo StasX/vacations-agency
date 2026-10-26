@@ -1,5 +1,5 @@
 import jwt
-from uuid import UUID, uuid4
+from uuid import uuid4
 from datetime import timedelta
 from django.utils import timezone
 from django.utils.crypto import salted_hmac
@@ -16,11 +16,6 @@ def decode_token(token):
     )
     if not isinstance(claims.get('jti'), str) or not claims['jti']:
         raise jwt.InvalidTokenError('Invalid token identifier')
-    if claims.get('type') == 'refresh':
-        try:
-            UUID(claims['sid'])
-        except (KeyError, TypeError, ValueError, AttributeError):
-            raise jwt.InvalidTokenError('Invalid refresh identifier') from None
     return claims
 
 
@@ -28,7 +23,7 @@ def password_fingerprint(user):
     return salted_hmac('jwt-refresh-password', user.password, algorithm='sha256').hexdigest()
 
 
-def issue_tokens(user, expires_at=None, refresh_sid=None):
+def issue_tokens(user, expires_at=None):
     now = timezone.now()
     expires_at = expires_at or now + timedelta(hours=1)
     payload = {
@@ -42,6 +37,6 @@ def issue_tokens(user, expires_at=None, refresh_sid=None):
     }
     access = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
     payload.update(type='refresh', jti=str(uuid4()), exp=expires_at,
-                   pwd=password_fingerprint(user), sid=refresh_sid or str(uuid4()))
+                   pwd=password_fingerprint(user))
     refresh = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
     return access, refresh, expires_at

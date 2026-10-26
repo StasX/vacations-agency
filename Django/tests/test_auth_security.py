@@ -15,7 +15,7 @@ def sign_in(client, user):
     return response.json()['access_token'], response.cookies['refresh'].value
 
 
-def test_refresh_replay_revokes_refresh_family_but_access_is_stateless(client, user):
+def test_refresh_replay_is_rejected_but_current_jti_and_access_remain_valid(client, user):
     access, original = sign_in(client, user)
     rotated = client.post('/api/auth/refresh-token')
     assert rotated.status_code == 200
@@ -24,7 +24,7 @@ def test_refresh_replay_revokes_refresh_family_but_access_is_stateless(client, u
     client.cookies['refresh'] = original
     assert client.post('/api/auth/refresh-token').status_code == 401
     client.cookies['refresh'] = newest
-    assert client.post('/api/auth/refresh-token').status_code == 401
+    assert client.post('/api/auth/refresh-token').status_code == 200
     assert client.get('/api/users/total', HTTP_AUTHORIZATION=access).status_code == 200
 
 

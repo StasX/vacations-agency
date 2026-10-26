@@ -55,7 +55,8 @@ def test_response_wrapper_preserves_response():
     assert fix_response_middleware(lambda req: response)(RequestFactory().get('/')) is response
 
 
-def test_cors_preflight(client):
+def test_cors_preflight(client, settings):
+    settings.CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
     response = client.options('/api/users/total', HTTP_ORIGIN='http://localhost:3000',
                               HTTP_ACCESS_CONTROL_REQUEST_METHOD='GET',
                               HTTP_ACCESS_CONTROL_REQUEST_HEADERS='authorization')

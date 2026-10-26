@@ -32,7 +32,7 @@ A containerized vacation agency platform featuring a **Flask application** for c
 | Area | Technologies |
 | --- | --- |
 | Customer application | Python, Flask, server-rendered frontend |
-| Statistics frontend | React, JavaScript / TypeScript, Material UI |
+| Statistics frontend | React, TypeScript, Material UI, Vite, Nginx |
 | Statistics API | Python, Django |
 | Database | MySQL |
 | Containers | Docker, Docker Compose |
@@ -43,10 +43,12 @@ A containerized vacation agency platform featuring a **Flask application** for c
 Customer / admin browser          Agency browser
        |                                |
        v                                v
-Flask application                React frontend
+Flask application :5000          Nginx :3000
 (customers + admins)                    |
+       |                         React files + /api/ proxy
+       |                                |
        |                                v
-       |                            Django API
+       |                         Django API :8000
        |                                |
        +-------------+------------------+
                      |
@@ -54,7 +56,15 @@ Flask application                React frontend
                    MySQL
 ```
 
-The Flask application handles customer-facing operations and vacation administration, while React requests statistics from the Django API. Both backend services work with the shared database.
+The Flask application handles customer-facing operations and vacation administration.
+Nginx serves the production React build on port 3000 and forwards `/api/` requests
+to `vacations-statistics:8000` on the Docker Compose network. Both backend
+services work with the shared database.
+
+React uses relative API URLs, so the browser sends requests to the same host,
+port, and protocol that serve the frontend. For example, opening
+`http://agency-host:3000` sends statistics requests to
+`http://agency-host:3000/api/...`; Nginx forwards them internally to Django.
 
 ## Screenshots
 
@@ -132,7 +142,10 @@ git clone https://github.com/StasX/vacations-agency.git
 cd vacations-agency
 ```
 
-Review `docker-compose.yml` and configure database credentials before running the services. The current container configuration is development-oriented and should be reviewed before public deployment.
+Copy `example.env` to `.env` and configure the database credentials, signing
+secrets, and token settings before running the services. Review
+`docker-compose.yml` before public deployment; the current configuration is
+development-oriented.
 
 ```bash
 docker compose up -d --build
@@ -145,7 +158,25 @@ docker compose ps
 docker compose logs -f
 ```
 
-Consult the published ports in `docker-compose.yml` to access the customer application and statistics frontend.
+Access the applications using these default ports:
+
+| Service | Local address | Purpose |
+| --- | --- | --- |
+| Flask | `http://localhost:5000` | Customer catalog and vacation administration |
+| Nginx / React | `http://localhost:3000` | Statistics dashboard and `/api/` proxy |
+| Django | `http://localhost:8000` | Direct API access for development |
+
+For remote access, replace `localhost` in the browser address with the server's
+hostname or IP address. The frontend does not require a separate API host setting.
+Use HTTPS for remote deployments so browsers can send Django's Secure refresh
+cookie. The dashboard accesses Django through Nginx; direct public access to
+port 8000 is unnecessary for dashboard requests.
+
+After changing the frontend or its Nginx configuration, rebuild its container:
+
+```bash
+docker compose up -d --build vacations-statistics-frontend
+```
 
 Stop the application:
 
@@ -176,13 +207,43 @@ accounts or change their passwords before production deployment.
 Seed changes apply only when MySQL initializes an empty data directory; existing
 database volumes require separate password resets for the old demo accounts.
 
+## Local Frontend Development
+
+With Node.js 24 and Django running locally on port 8000:
+
+```bash
+cd React
+npm ci
+npm start
+```
+
+Vite serves the frontend on port 3000 and proxies `/api/` requests to
+`http://127.0.0.1:8000`. The same proxy applies to `npm run preview` after
+`npm run build`. In Docker, Nginx handles the proxy instead.
+
+## Tests and CI
+
+Both Python backends keep pytest 8.x and its plugins in `requirements-dev.txt`.
+From either `Flask/` or `Django/`, using an activated Python environment:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+From `React/`, run `npm run test:ci` for the frontend tests and `npm run build`
+for type checking and a production build. Backend suites include strict expected
+failures for documented defects. See [Flask tests](Flask/tests/README.md),
+[Django tests](Django/tests/README.md), and [React tests](React/tests/README.md)
+for setup, coverage, and limitations.
+
+The GitHub Actions workflow runs backend tests, frontend checks, and Trivy and
+Bandit security scans.
+
 ## Possible Improvements
 
-
-- Serve the production React build with Nginx.
-- Move secrets and database credentials into environment variables.
 - Restrict public exposure of internal services.
-- Add automated tests and CI/CD checks.
+- Harden Django debug, allowed-host, and CORS settings for production.
 - Document database ownership and migrations between the two backends.
 
 ## License

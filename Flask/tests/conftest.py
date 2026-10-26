@@ -13,7 +13,6 @@ def no_database(monkeypatch):
 
 @pytest.fixture
 def app(monkeypatch):
-    # Patch before importing app: vacations_view opens a DAL at import time.
     # Every test gets a fresh mock; no real database connections are allowed.
     dal = MagicMock(return_value=MagicMock())
     for name in ("auth", "countries", "likes", "vacations"):
@@ -45,6 +44,24 @@ def image_directory(app, tmp_path, monkeypatch):
 @pytest.fixture
 def client(app):
     return app.test_client()
+
+
+@pytest.fixture
+def request_connections(app, monkeypatch):
+    """Exercise real DAL lifecycle with only the MySQL driver mocked."""
+    from utils.dal import DAL
+    connections = []
+    def connect(**kwargs):
+        connection = MagicMock()
+        connection.is_connected.return_value = True
+        connection.cursor.return_value.fetchall.return_value = []
+        connection.cursor.return_value.fetchone.return_value = {'image': None}
+        connections.append(connection)
+        return connection
+    monkeypatch.setattr('utils.dal.mysql.connector.connect', connect)
+    for name in ('auth', 'countries', 'likes', 'vacations'):
+        monkeypatch.setattr(importlib.import_module(f'logic.{name}_logic'), 'DAL', DAL)
+    return connections
 
 
 @pytest.fixture

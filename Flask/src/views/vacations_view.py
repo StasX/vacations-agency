@@ -9,8 +9,6 @@ from utils.image_handler import ImageHandler
 
 vacations_blueprint = Blueprint("vacations_view", __name__)
 
-vacations_facade = VacationsFacade()
-
 
 # Get list of all vacations
 @vacations_blueprint.route("/vacations")

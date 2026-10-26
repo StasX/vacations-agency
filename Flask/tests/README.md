@@ -38,7 +38,6 @@ node --test Flask/tests/js/ui.test.cjs
 Known defects are executable regression tests marked as strict expected failures:
 
 - Missing vacation records do not return 404.
-- Request-created database connections are not closed.
 
 When fixing these defects, remove the corresponding `xfail` markers. Strict mode
 makes an unexpected pass fail the suite so a fix cannot silently leave a stale

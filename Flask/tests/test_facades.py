@@ -65,9 +65,9 @@ def test_get_old_image(app):
     assert app.test_dal.get_scalar.call_args.args[1] == (12,)
 
 
-@pytest.mark.xfail(strict=True, reason="Request-created connections are not closed")
-def test_authenticated_request_closes_database_connections(client, app, sign_in):
+def test_authenticated_request_closes_database_connections(client, request_connections, sign_in):
     sign_in()
-    app.test_dal.get_table.return_value = []
     assert client.get("/vacations").status_code == 200
-    app.test_dal.close.assert_called()
+    assert request_connections
+    for connection in request_connections:
+        connection.close.assert_called_once_with()

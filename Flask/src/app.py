@@ -7,6 +7,7 @@ from views.likes_view import likes_blueprint
 from utils.app_config import AppConfig
 from utils.logger import Logger
 from utils.csrf import init_csrf
+from utils.dal import close_request_connections
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s: %(message)s')
@@ -16,6 +17,7 @@ app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 # Create session secret key:
 app.secret_key = AppConfig.session_secret_key
 init_csrf(app)
+app.teardown_request(close_request_connections)
 
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(vacations_blueprint)

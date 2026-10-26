@@ -45,6 +45,5 @@ def test_edit_allows_existing_past_start_date_without_new_image():
 
 
 @pytest.mark.parametrize("overrides", [{"start_date": "bad-date"}, {"price": "bad-price"}])
-@pytest.mark.xfail(strict=True, raises=ValueError, reason="Malformed input raises instead of returning validation errors")
 def test_malformed_vacation_returns_validation_error(overrides):
     assert vacation(**overrides).validate_insert()

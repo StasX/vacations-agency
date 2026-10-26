@@ -99,15 +99,15 @@ def edit(id):
         # Get list of countries
         countries_facade = CountriesFacade()
         countries = countries_facade.get_all_countries()
-        country_id = int(err.model.country)
+        country_id = err.model.country
         filtered_countries = [
-            country for country in countries if country["country_id"] == country_id]
+            country for country in countries if str(country["id"]) == str(country_id)]
         if not len(filtered_countries):
             # If country not exists  reset country
             selected_country = "Select country"
             err.model.country = None
         else:
-            selected_country = filtered_countries[0]["country"]
+            selected_country = filtered_countries[0]["name"]
         # Fix country id and country name
         err.model.country_id, err.model.country = err.model.country, selected_country
         # Get current vacation image

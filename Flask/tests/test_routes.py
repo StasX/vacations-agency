@@ -88,7 +88,6 @@ def test_missing_page_returns_404(client):
     assert client.get("/missing-page").status_code == 404
 
 
-@pytest.mark.xfail(strict=True, reason="Edit error handler uses incorrect country column names")
 def test_invalid_edit_shows_validation_message(client, app, sign_in, monkeypatch):
     sign_in(1)
     monkeypatch.setattr("app.Logger.write_log", lambda error: None)

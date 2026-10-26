@@ -37,8 +37,6 @@ node --test Flask/tests/js/ui.test.cjs
 
 Known defects are executable regression tests marked as strict expected failures:
 
-- Invalid edit submissions use incorrect country column names during recovery.
-- Malformed dates and prices raise `ValueError` instead of validation errors.
 - Missing vacation records do not return 404.
 - Request-created database connections are not closed.
 
@@ -48,7 +46,7 @@ marker.
 
 Coverage measures Python statements and branches; it includes code executed by
 expected-failure tests. The remaining uncovered Python code includes unreachable
-empty-description checks and the broken country recovery block. Coverage does
+defensive validation branches. Coverage does
 not prove correctness of SQL against a real database.
 
 These are isolated unit and Flask test-client integration tests. Real MySQL,

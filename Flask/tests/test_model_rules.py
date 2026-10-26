@@ -99,11 +99,17 @@ def test_insert_rejects_missing_image_and_non_string_country(model):
     assert model.validate_insert() == "Country is invalid"
 
 
-@pytest.mark.parametrize("field,value", [("start_date", "bad"), ("end_date", "2030-02-30"), ("price", "bad")])
-@pytest.mark.xfail(strict=True, raises=ValueError, reason="Update validation does not catch malformed values")
-def test_update_malformed_values_return_error(model, field, value):
+@pytest.mark.parametrize("field,value", [
+    ("start_date", "bad"), ("start_date", 123),
+    ("end_date", "2030-02-30"), ("end_date", []),
+    ("price", "bad"), ("price", "NaN"), ("price", "sNaN"),
+    ("price", "Infinity"), ("price", "-Infinity"),
+    ("price", "1e10000"), ("price", "10000.0000000000001"),
+])
+@pytest.mark.parametrize('method', ['validate_insert', 'validate_update'])
+def test_malformed_values_return_error(model, method, field, value):
     setattr(model, field, value)
-    assert model.validate_update()
+    assert getattr(model, method)()
 
 
 def test_client_errors_retain_message_and_model():

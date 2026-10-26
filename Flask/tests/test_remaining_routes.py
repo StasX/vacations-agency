@@ -86,6 +86,44 @@ def test_invalid_add_renders_error_without_mutation(client, app, sign_in, data, 
     app.test_dal.insert.assert_not_called()
 
 
+@pytest.mark.parametrize('path', ['/vacations/add', '/vacations/12/edit'])
+@pytest.mark.parametrize('field,value,message', [
+    ('start_date', 'bad-date', b'Start date is invalid.'),
+    ('end_date', '2099-02-30', b'End date is invalid.'),
+    ('price', 'bad-price', b'Price is invalid.'),
+    ('price', 'NaN', b'Price is invalid.'),
+    ('price', 'Infinity', b'Price is invalid.'),
+])
+def test_malformed_vacation_form_renders_error_without_writing(
+        client, app, sign_in, image_directory, path, field, value, message):
+    sign_in(1)
+    app.test_dal.get_table.return_value = [{'id': 1, 'name': 'Italy'}]
+    app.test_dal.get_scalar.return_value = {'image': 'existing.jpg'}
+    data = form(**{field: value})
+    data['image'] = (BytesIO(make_image()), 'photo.jpg')
+    response = client.post(path, data=data)
+    assert response.status_code == 200
+    assert message in response.data
+    app.test_dal.insert.assert_not_called()
+    app.test_dal.update.assert_not_called()
+    assert not list(image_directory.iterdir())
+    if path.endswith('/edit'):
+        assert b'Italy' in response.data
+        assert b'Holiday' in response.data
+        assert b'existing.jpg' in response.data
+
+
+@pytest.mark.parametrize('country', ['', 'bad', '999'])
+def test_invalid_edit_country_can_render_validation_error(client, app, sign_in, country):
+    sign_in(1)
+    app.test_dal.get_table.return_value = [{'id': 1, 'name': 'Italy'}]
+    app.test_dal.get_scalar.return_value = {'image': None}
+    response = client.post('/vacations/12/edit', data=form(country=country, price='bad'))
+    assert response.status_code == 200
+    assert b'Select country' in response.data
+    app.test_dal.update.assert_not_called()
+
+
 def test_admin_edit_form_renders_existing_values(client, app, sign_in):
     sign_in(1)
     app.test_dal.get_scalar.return_value = dict(

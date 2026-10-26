@@ -31,7 +31,15 @@ def client(tmp_path):
 def admin(sql):
     sql.execute('INSERT INTO users (first_name,last_name,email,password,role_id) VALUES (%s,%s,%s,%s,%s)',
                 ('Test', 'Admin', 'admin@test.example', Security.hash('Password123!'), 1))
-    return sql.lastrowid
+    from utils.auth_status import get_redis
+    from uuid import uuid4
+    user_id = sql.lastrowid
+    key = f'vacations:auth:status:{user_id}'
+    get_redis().set(key, 'enabled:' + str(uuid4()))
+    try:
+        yield user_id
+    finally:
+        get_redis().delete(key)
 
 
 @pytest.fixture
@@ -113,6 +121,8 @@ def test_concurrent_like_toggles_are_serialized(admin, trip, sql):
 def test_authenticated_request_closes_real_mysql_connection(client, admin):
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
+        from utils.auth_status import get_status
+        session['auth_status'] = get_status(admin)
     # Observe the actual handles during the request; do not replace the driver.
     seen = []
     def capture(sender, template, context, **extra):
@@ -124,14 +134,19 @@ def test_authenticated_request_closes_real_mysql_connection(client, admin):
     assert all(not connection.is_connected() for connection in seen)
 
 
-def test_redis_disabled_status_blocks_flask_session(client, admin):
-    from utils.auth_status import get_redis
+@pytest.mark.parametrize('missing', [False, True])
+def test_redis_disabled_or_missing_status_blocks_flask_session(client, admin, missing):
+    from utils.auth_status import get_redis, get_status
     store = get_redis()
     key = f'vacations:auth:status:{admin}'
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1}
+        session['auth_status'] = get_status(admin)
     try:
-        store.set(key, 'disabled:integration-test')
+        if missing:
+            store.delete(key)
+        else:
+            store.set(key, 'disabled:integration-test')
         assert client.get('/vacations').status_code == 302
         with client.session_transaction() as session:
             assert 'current_user' not in session
@@ -142,6 +157,8 @@ def test_redis_disabled_status_blocks_flask_session(client, admin):
 def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, admin, trip, sql):
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
+        from utils.auth_status import get_status
+        session['auth_status'] = get_status(admin)
     client.get(f'/vacations/{trip}/edit')
     with client.session_transaction() as session:
         token = session['_csrf_token']

@@ -203,9 +203,12 @@ no MySQL schema migration is required. Status keys have no expiry and use the
 persistent Redis volume. From a Django shell, disable an account with
 `from utils.auth_status import set_enabled; set_enabled(7, False)` and enable it
 with `set_enabled(7, True)`. Each status change invalidates earlier dashboard
-tokens and Flask sessions, including after re-enabling. Missing status keys mean
-enabled for existing accounts; do not clear the Redis volume to reset sessions,
-as this also removes disabled-account status. Redis outages block authenticated
+tokens and Flask sessions, including after re-enabling. Missing or malformed status keys deny authentication; login never creates or
+repairs them. Before deploying, explicitly enable only reviewed existing
+accounts with `set_enabled(user_id, True)`. New Flask registrations initialize
+status atomically with `SET NX`, preserving any existing disabled status.
+If Redis data is lost, recover status from a trusted backup or explicitly
+review and enable accounts; do not bulk-enable them automatically. Redis outages block authenticated
 requests. Dashboard requests also recheck MySQL for deletion, role changes, and
 password changes. Previously issued tokens without the status claim require a
 new login.

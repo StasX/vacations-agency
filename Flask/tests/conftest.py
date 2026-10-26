@@ -7,7 +7,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def no_redis(monkeypatch):
     store = MagicMock()
-    store.get.return_value = None
+    store.get.return_value = 'enabled:00000000-0000-4000-8000-000000000007'
     monkeypatch.setattr('utils.auth_status.get_redis', lambda: store)
     return store
 
@@ -79,6 +79,7 @@ def sign_in(client):
                     email="test@example.com", role=role)
         with client.session_transaction() as session:
             session["current_user"] = user
+            session['auth_status'] = 'enabled:00000000-0000-4000-8000-000000000007'
         return user
     return login
 

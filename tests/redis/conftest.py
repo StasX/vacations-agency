@@ -32,11 +32,17 @@ def redis_client():
 
 
 @pytest.fixture
-def user():
+def user(redis_client):
     # Identity is synthetic: these tests exercise Redis and never open MySQL.
-    return SimpleNamespace(pk=7, first_name='Redis', last_name='Tester',
+    from utils import auth_status
+    member = SimpleNamespace(pk=7, first_name='Redis', last_name='Tester',
         email='redis@test.example', password='test-only-password-hash',
         role=SimpleNamespace(role_type='Admin'))
+    auth_status.set_enabled(member.pk, True)
+    try:
+        yield member
+    finally:
+        redis_client.delete(auth_status.status_key(member.pk))
 
 
 @pytest.fixture

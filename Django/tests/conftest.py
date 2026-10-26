@@ -62,9 +62,11 @@ def authorized_client(client, token_factory, user):
 @pytest.fixture
 def user(db):
     role = RoleModel.objects.create(role_type='Admin')
-    return UserModel.objects.create(first_name='Test', last_name='Admin',
+    member = UserModel.objects.create(first_name='Test', last_name='Admin',
                                    email='admin@example.com',
                                    password=Security.hash('Password123!'), role=role)
+    auth_status.set_enabled(member.pk, True)
+    return member
 
 
 @pytest.fixture

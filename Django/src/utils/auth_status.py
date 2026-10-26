@@ -1,5 +1,5 @@
 """Persistent Redis account status, shared with the Flask application."""
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 def status_key(user_id):
@@ -10,12 +10,18 @@ def status_key(user_id):
 
 def get_status(user_id):
     from . import refresh_tokens
-    status = refresh_tokens.get_redis().get(status_key(user_id))
-    return 'enabled:initial' if status is None else status
+    return refresh_tokens.get_redis().get(status_key(user_id))
 
 
 def is_enabled(status):
-    return isinstance(status, str) and status.startswith('enabled:')
+    if not isinstance(status, str) or not status.startswith('enabled:'):
+        return False
+    try:
+        version = status.removeprefix('enabled:')
+        parsed = UUID(version)
+        return parsed.version == 4 and str(parsed) == version
+    except ValueError:
+        return False
 
 
 def set_enabled(user_id, enabled):

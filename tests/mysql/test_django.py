@@ -12,9 +12,15 @@ from vacations.models import VacationModel
 
 @pytest.fixture
 def user():
-    return UserModel.objects.create(first_name='Test', last_name='Admin',
+    from utils import auth_status, refresh_tokens
+    member = UserModel.objects.create(first_name='Test', last_name='Admin',
                                     email='admin@test.example',
                                     password=Security.hash('Password123!'), role_id=1)
+    auth_status.set_enabled(member.pk, True)
+    try:
+        yield member
+    finally:
+        refresh_tokens.get_redis().delete(auth_status.status_key(member.pk))
 
 
 @pytest.fixture

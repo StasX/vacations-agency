@@ -4,7 +4,8 @@ from utils import auth_status
 
 
 def test_status_persists_and_reenable_changes_version(redis_store):
-    assert auth_status.get_status(7) == 'enabled:initial'
+    assert auth_status.get_status(7) is None
+    assert not auth_status.is_enabled(auth_status.get_status(7))
     disabled = auth_status.set_enabled(7, False)
     assert not auth_status.is_enabled(disabled)
     assert auth_status.get_status(7) == disabled
@@ -13,6 +14,33 @@ def test_status_persists_and_reenable_changes_version(redis_store):
     assert auth_status.is_enabled(enabled)
     assert enabled != 'enabled:initial'
     assert auth_status.get_status(7) == enabled
+
+
+@pytest.mark.parametrize('status', [None, '', 'enabled:', 'enabled:initial', 'enabled:invalid',
+    'disabled:00000000-0000-4000-8000-000000000007'])
+def test_missing_or_malformed_status_is_not_enabled(status):
+    assert not auth_status.is_enabled(status)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize('operation', ['access', 'refresh', 'login'])
+def test_deleted_disabled_status_never_reactivates_account(client, user, redis_store, operation):
+    from utils.tokens import issue_tokens
+    from utils import refresh_tokens
+    access, refresh, _ = issue_tokens(user)
+    refresh_tokens.register(refresh)
+    auth_status.set_enabled(user.pk, False)
+    redis_store.delete(auth_status.status_key(user.pk))
+    if operation == 'access':
+        response = client.get('/api/users/total', HTTP_AUTHORIZATION=access)
+    elif operation == 'refresh':
+        client.cookies['refresh'] = refresh
+        response = client.post('/api/auth/refresh-token')
+    else:
+        response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
+                               content_type='application/json')
+    assert response.status_code == (400 if operation == 'login' else 401)
+    assert redis_store.get(auth_status.status_key(user.pk)) is None
 
 
 @pytest.mark.parametrize('operation', ['access', 'refresh'])

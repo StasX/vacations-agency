@@ -18,11 +18,15 @@ def test_account_status_is_persistent_and_changes_version(redis_client):
     user_id = uuid4().int
     key = auth_status.status_key(user_id)
     try:
-        assert auth_status.get_status(user_id) == 'enabled:initial'
+        assert auth_status.get_status(user_id) is None
+        assert not auth_status.is_enabled(auth_status.get_status(user_id))
         disabled = auth_status.set_enabled(user_id, False)
         assert auth_status.get_status(user_id) == disabled
         assert not auth_status.is_enabled(disabled)
         assert redis_client.pexpiretime(key) == -1
+        redis_client.delete(key)
+        assert auth_status.get_status(user_id) is None
+        assert not auth_status.is_enabled(auth_status.get_status(user_id))
         enabled = auth_status.set_enabled(user_id, True)
         assert auth_status.is_enabled(enabled)
         assert enabled != disabled and enabled != 'enabled:initial'

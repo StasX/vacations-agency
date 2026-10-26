@@ -54,7 +54,7 @@ class AuthFacade:
             user = self.logic.get_user(user)
             if user is None:
                 raise RuntimeError("Registered account could not be read back")
-            status = auth_status.get_status(user['id'])
+            status = auth_status.initialize_status(user['id'])
             if not auth_status.is_enabled(status):
                 raise AuthError("Account disabled.")
         del user["password"]
@@ -81,6 +81,6 @@ class AuthFacade:
     @staticmethod
     def check_status(user):
         status = auth_status.get_status(user['id'])
-        if not auth_status.is_enabled(status) or session.get('auth_status', 'enabled:initial') != status:
+        if not auth_status.is_enabled(status) or session.get('auth_status') != status:
             session.clear()
             raise AuthError("Your session is no longer valid.")

@@ -70,8 +70,6 @@ services:
       ISSUER: ${ISSUER}
       AUDIENCE: ${AUDIENCE}
     restart: unless-stopped
-    ports:
-      - 8000:8000
     networks:
       - default
       - redis-backend

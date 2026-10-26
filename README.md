@@ -164,13 +164,12 @@ Access the applications using these default ports:
 | --- | --- | --- |
 | Flask | `http://localhost:5000` | Customer catalog and vacation administration |
 | Nginx / React | `http://localhost:3000` | Statistics dashboard and `/api/` proxy |
-| Django | `http://localhost:8000` | Direct API access for development |
 
 For remote access, replace `localhost` in the browser address with the server's
 hostname or IP address. The frontend does not require a separate API host setting.
 Use HTTPS for remote deployments so browsers can send Django's Secure refresh
-cookie. The dashboard accesses Django through Nginx; direct public access to
-port 8000 is unnecessary for dashboard requests.
+cookie. The dashboard accesses Django through Nginx at `/api/`. Django listens
+on port 8000 inside the Compose network and does not publish a host port.
 
 Flask session cookies explicitly use `HttpOnly`, `SameSite=Lax`, and `Secure`
 by default. Keep `FLASK_COOKIE_SECURE=true` for HTTPS deployments. For local

@@ -52,7 +52,7 @@ def test_expired_access_requests_refresh(client, token_factory):
     assert response.json() == {'error': 'Token expired, refresh required'}
 
 
-def test_valid_token_calls_downstream(token_factory):
+def test_valid_token_calls_downstream(token_factory, user):
     request = RequestFactory().get('/api/users/total', HTTP_AUTHORIZATION=token_factory())
     response = JsonResponse({'called': True})
     assert auth_middleware(lambda req: response)(request) is response

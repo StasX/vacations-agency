@@ -1,7 +1,9 @@
 from django.http import JsonResponse
 from rest_framework import status
 from utils.app_config import AppConfig
-from utils.tokens import decode_token
+from utils.tokens import decode_token, password_fingerprint
+from django.utils.crypto import constant_time_compare
+from users.models import UserModel
 from utils.errors import server_error
 from django.core.exceptions import PermissionDenied, SuspiciousOperation
 from django.http import Http404
@@ -55,6 +57,15 @@ def auth_middleware(get_response):
                 user = decoded.get("user")
                 if not isinstance(user, dict) or user.get("role") != "Admin":
                     return JsonResponse({"error": "Forbidden"}, status=403)
+                if type(user.get("id")) is not int or user["id"] <= 0:
+                    return JsonResponse({"error": "Unauthorized"}, status=401)
+                current = UserModel.objects.select_related('role').filter(pk=user['id']).first()
+                fingerprint = decoded.get('pwd')
+                if (current is None or not current.is_active
+                        or current.role.role_type != 'Admin'
+                        or not isinstance(fingerprint, str)
+                        or not constant_time_compare(fingerprint, password_fingerprint(current))):
+                    return JsonResponse({"error": "Unauthorized"}, status=401)
             except ExpiredSignatureError:
                 refresh_cookie = request.COOKIES.get("refresh")
                 if not refresh_cookie:

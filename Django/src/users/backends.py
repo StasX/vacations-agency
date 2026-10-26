@@ -9,7 +9,7 @@ class AuthBackend(ModelBackend):
         try:
             user = UserModel.objects.get(email=username)
             # Check password matches
-            if Security.verify(password, user.password):
+            if user.is_active and Security.verify(password, user.password):
                 if Security.needs_rehash(user.password):
                     user.password = Security.hash(password)
                     user.save(update_fields=["password"])

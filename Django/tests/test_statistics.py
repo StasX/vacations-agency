@@ -11,7 +11,7 @@ ENDPOINTS = ['/api/users/total', '/api/likes/total', '/api/likes/statistics',
 
 
 def test_empty_statistics(authorized_client):
-    assert authorized_client.get(ENDPOINTS[0]).json() == {'total_users': 0}
+    assert authorized_client.get(ENDPOINTS[0]).json() == {'total_users': 1}
     assert authorized_client.get(ENDPOINTS[1]).json() == {'total_likes': 0}
     assert authorized_client.get(ENDPOINTS[2]).json() == []
     assert authorized_client.get(ENDPOINTS[3]).json() == {
@@ -78,7 +78,11 @@ def test_statistics_only_accept_get(authorized_client, path, method):
     ('/api/likes/statistics', 'likes.views.LikeModel.objects'),
 ])
 def test_database_error_returns_500(authorized_client, path, target, caplog):
+    account_lookup = UserModel.objects.select_related
     with patch(target) as manager:
+        # Keep the real authorization lookup while failing the statistics query.
+        if target == 'users.views.UserModel.objects':
+            manager.select_related.side_effect = account_lookup
         manager.all.side_effect = RuntimeError('database unavailable')
         manager.values.side_effect = RuntimeError('database unavailable')
         response = authorized_client.get(path)

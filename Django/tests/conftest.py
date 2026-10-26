@@ -40,7 +40,7 @@ def token_factory(db):
                        iss=AppConfig.issuer, aud=AppConfig.audience, jti=str(uuid4()))
         payload.update(claims)
         member = UserModel.objects.filter(pk=1).first()
-        if payload.get('type') == 'refresh' and member:
+        if member:
             payload.setdefault('pwd', password_fingerprint(member))
         token = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
         if payload.get('type') == 'refresh':
@@ -53,7 +53,7 @@ def token_factory(db):
 
 
 @pytest.fixture
-def authorized_client(client, token_factory):
+def authorized_client(client, token_factory, user):
     client.defaults['HTTP_AUTHORIZATION'] = token_factory()
     return client
 

@@ -13,7 +13,7 @@ class AuthLogic:
         return last_inserted_id
 
     def get_user(self, credentials):
-        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s"
+        sql = "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE email=%s AND is_active=1"
         params = (credentials.email,)
         user = self.dal.get_scalar(sql, params)
         return user

@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `last_name` varchar(15) NOT NULL,
   `email` varchar(30) NOT NULL,
   `password` varchar(128) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `role_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),

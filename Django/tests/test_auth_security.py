@@ -36,14 +36,14 @@ def test_logout_clears_cookie_without_database_access(client, user, django_asser
     cookie = response.cookies['refresh']
     assert cookie['path'] == '/' and cookie['max-age'] == 0
     assert cookie['secure'] and cookie['httponly'] and cookie['samesite'] == 'Lax'
-    # Access tokens stay stateless; refresh tokens are revoked in Redis.
+    # Logout revokes refresh tokens; access still requires an eligible account.
     assert client.get('/api/users/total', HTTP_AUTHORIZATION=access).status_code == 200
     client.cookies['refresh'] = refresh
     assert client.post('/api/auth/refresh-token').status_code == 401
     assert client.delete('/api/auth/logout').status_code == 204
 
 
-def test_access_validation_does_not_query_database_or_redis(client, user, django_assert_num_queries, monkeypatch):
+def test_access_validation_checks_database_without_redis(client, user, django_assert_num_queries, monkeypatch):
     from django.http import JsonResponse
     from django.test import RequestFactory
     from users.middleware import auth_middleware
@@ -52,12 +52,12 @@ def test_access_validation_does_not_query_database_or_redis(client, user, django
         pytest.fail('Access validation must not read Redis')
     monkeypatch.setattr('utils.refresh_tokens.get_redis', unexpected_redis)
     request = RequestFactory().get('/api/users/total', HTTP_AUTHORIZATION=access)
-    with django_assert_num_queries(0):
+    with django_assert_num_queries(1):
         response = auth_middleware(lambda request: JsonResponse({'ok': True}))(request)
     assert response.status_code == 200
 
 
-@pytest.mark.parametrize('change', ['password', 'role', 'deleted'])
+@pytest.mark.parametrize('change', ['password', 'role', 'deleted', 'disabled'])
 def test_refresh_rechecks_current_user(client, user, change):
     sign_in(client, user)
     if change == 'password':
@@ -66,6 +66,9 @@ def test_refresh_rechecks_current_user(client, user, change):
     elif change == 'role':
         user.role.role_type = 'User'
         user.role.save()
+    elif change == 'disabled':
+        user.is_active = False
+        user.save(update_fields=['is_active'])
     else:
         user.delete()
     assert client.post('/api/auth/refresh-token').status_code == 401
@@ -78,6 +81,60 @@ def test_refresh_uses_current_profile(client, user):
     user.save(update_fields=['first_name'])
     response = client.post('/api/auth/refresh-token')
     assert decode_token(response.json()['access_token'])['user']['firstName'] == 'Updated'
+
+
+@pytest.mark.parametrize('change', ['password', 'role', 'deleted', 'disabled'])
+@pytest.mark.parametrize('path', ['/api/users/total', '/api/likes/total',
+    '/api/likes/statistics', '/api/vacations/statistics'])
+def test_access_rechecks_current_account(client, user, change, path):
+    access, _ = sign_in(client, user)
+    assert client.get(path, HTTP_AUTHORIZATION=access).status_code == 200
+    if change == 'password':
+        user.password = 'new-password-hash'
+        user.save(update_fields=['password'])
+    elif change == 'role':
+        user.role.role_type = 'User'
+        user.role.save()
+    elif change == 'disabled':
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+    else:
+        user.delete()
+    assert client.get(path, HTTP_AUTHORIZATION=access).status_code == 401
+
+
+def test_disabled_account_cannot_login(client, user):
+    user.is_active = False
+    user.save(update_fields=['is_active'])
+    response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
+                           content_type='application/json')
+    assert response.status_code == 400
+    assert 'refresh' not in response.cookies
+
+
+@pytest.mark.parametrize('profile', [{'id': True, 'role': 'Admin'},
+    {'id': '1', 'role': 'Admin'}, {'id': -1, 'role': 'Admin'}])
+def test_access_rejects_invalid_user_id(client, user, token_factory, profile):
+    assert client.get('/api/users/total', HTTP_AUTHORIZATION=token_factory(user=profile)).status_code == 401
+
+
+def test_access_without_password_fingerprint_is_rejected(client, user, token_factory):
+    import jwt
+    from utils.app_config import AppConfig
+    claims = jwt.decode(token_factory(), options={'verify_signature': False})
+    del claims['pwd']
+    token = jwt.encode(claims, AppConfig.secret_key, algorithm='HS256')
+    assert client.get('/api/users/total', HTTP_AUTHORIZATION=token).status_code == 401
+
+
+def test_access_fails_closed_when_account_lookup_fails(client, user, monkeypatch):
+    access, _ = sign_in(client, user)
+    def unavailable(*args, **kwargs):
+        raise RuntimeError('database unavailable')
+    monkeypatch.setattr('users.middleware.UserModel.objects.select_related', unavailable)
+    response = client.get('/api/users/total', HTTP_AUTHORIZATION=access)
+    assert response.status_code == 500
+    assert response.json() == {'error': 'Internal server error'}
 
 
 def test_refresh_expiry_is_absolute(client, user):

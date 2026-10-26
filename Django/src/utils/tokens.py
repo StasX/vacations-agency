@@ -34,6 +34,7 @@ def issue_tokens(user, expires_at=None):
         'exp': min(now + timedelta(minutes=10), expires_at),
         'iat': now, 'iss': AppConfig.issuer, 'aud': AppConfig.audience,
         'jti': str(uuid4()),
+        'pwd': password_fingerprint(user),
     }
     access = jwt.encode(payload, AppConfig.secret_key, algorithm='HS256')
     payload.update(type='refresh', jti=str(uuid4()), exp=expires_at,

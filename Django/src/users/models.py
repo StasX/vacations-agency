@@ -1,4 +1,4 @@
-from django.db.models import Model, CharField, ForeignKey, DO_NOTHING
+from django.db.models import Model, CharField, ForeignKey, BooleanField, DO_NOTHING
 
 
 class RoleModel(Model):
@@ -14,6 +14,7 @@ class UserModel(Model):
     last_name = CharField(max_length=15)
     email = CharField(unique=True, max_length=30)
     password = CharField(max_length=128)
+    is_active = BooleanField(default=True)
     role = ForeignKey(RoleModel, DO_NOTHING)
 
     class Meta:

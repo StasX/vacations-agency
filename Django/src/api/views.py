@@ -143,7 +143,7 @@ def refresh_token(request):
         except UserModel.DoesNotExist:
             refresh_tokens.revoke(cookie)
             return unauthorized()
-        if user.role.role_type != 'Admin' or claims.get('pwd') != password_fingerprint(user):
+        if not user.is_active or user.role.role_type != 'Admin' or claims.get('pwd') != password_fingerprint(user):
             refresh_tokens.revoke(cookie)
             return unauthorized()
         # Preserve the original refresh deadline; refreshing cannot extend it.

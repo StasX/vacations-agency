@@ -88,9 +88,26 @@ def test_app_config_reads_environment(monkeypatch):
 
 
 @pytest.mark.django_db
-@pytest.mark.xfail(strict=True, raises=IntegrityError, reason='Known model mismatch: OneToOneField prevents multiple likes per user')
 def test_user_can_like_multiple_vacations(user, vacation_factory):
     for _ in range(2):
         vacation = vacation_factory(date(2030, 1, 1), date(2030, 1, 7))
         LikeModel.objects.create(user=user, vacation=vacation)
     assert LikeModel.objects.filter(user=user).count() == 2
+
+
+@pytest.mark.django_db
+def test_duplicate_user_vacation_like_is_rejected(user, vacation_factory):
+    vacation = vacation_factory(date(2030, 1, 1), date(2030, 1, 7))
+    LikeModel.objects.create(user=user, vacation=vacation)
+    with pytest.raises(IntegrityError), transaction.atomic():
+        LikeModel.objects.create(user=user, vacation=vacation)
+    assert LikeModel.objects.filter(user=user, vacation=vacation).count() == 1
+
+
+@pytest.mark.django_db
+def test_deleting_one_like_preserves_other_likes_by_same_user(user, vacation_factory):
+    vacations = [vacation_factory(date(2030, 1, 1), date(2030, 1, 7)) for _ in range(2)]
+    likes = [LikeModel.objects.create(user=user, vacation=vacation) for vacation in vacations]
+    assert likes[0].pk == (user.pk, vacations[0].pk)
+    likes[0].delete()
+    assert list(LikeModel.objects.filter(user=user).values_list('vacation_id', flat=True)) == [vacations[1].pk]

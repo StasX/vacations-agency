@@ -19,9 +19,9 @@ Unmanaged country, vacation, and like tables are created only in the test databa
 Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregation,
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 
-Known defects are documented with strict `xfail` tests:
-multiple likes per user. This appears as an expected failure; once the defect is
-fixed, remove its marker (an unexpected pass fails the suite).
+Like tests cover multiple vacations per user, duplicate-pair rejection, deletion
+of individual likes, and statistics aggregation. The unmanaged likes model maps
+the existing MySQL composite primary key `(user_id, vacation_id)`.
 
 Password tests cover randomized hashing, shared Flask/Django compatibility,
 legacy hash upgrades, rejected passwords, and malformed hashes.

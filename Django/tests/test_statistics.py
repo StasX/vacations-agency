@@ -54,6 +54,18 @@ def test_likes_group_by_country(authorized_client, user, vacation_factory):
         {'destination': 'Greece', 'likes': 3}, {'destination': 'Italy', 'likes': 1}]
 
 
+def test_statistics_count_multiple_vacations_liked_by_same_user(authorized_client, user, vacation_factory):
+    today = date.today()
+    for country in ['Greece', 'Greece', 'Italy']:
+        vacation = vacation_factory(today, today, country)
+        LikeModel.objects.create(user=user, vacation=vacation)
+    assert authorized_client.get('/api/likes/total').json() == {'total_likes': 3}
+    response = authorized_client.get('/api/likes/statistics')
+    assert response.status_code == 200
+    assert sorted(response.json(), key=lambda row: row['destination']) == [
+        {'destination': 'Greece', 'likes': 2}, {'destination': 'Italy', 'likes': 1}]
+
+
 @pytest.mark.parametrize('path', ENDPOINTS)
 @pytest.mark.parametrize('method', ['post', 'put', 'patch', 'delete'])
 def test_statistics_only_accept_get(authorized_client, path, method):

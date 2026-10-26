@@ -45,3 +45,6 @@ not prove correctness of SQL against a real database.
 
 These are isolated unit and Flask test-client integration tests. Real MySQL,
 Docker startup, browser rendering, and external CDN availability are not tested.
+
+The separate [MySQL integration suite](../../tests/mysql/README.md) exercises the
+real DAL, shared SQL schema, request cleanup, and Docker services.

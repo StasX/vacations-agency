@@ -68,6 +68,45 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+  mysql-integration:
+    name: Real MySQL integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build isolated application test images
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml build
+      - name: Start disposable MySQL and Redis
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml up -d --wait --wait-timeout 180 mysql redis
+      - name: Test Django against MySQL
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml run --rm django-tests
+      - name: Test Flask against MySQL
+        if: ${{ !cancelled() }}
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml run --rm flask-tests
+      - name: Collect service logs
+        if: failure()
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml logs --no-color mysql redis
+      - name: Remove isolated test environment
+        if: always()
+        run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml down --volumes --remove-orphans
+
+  redis-integration:
+    name: Real Redis integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build isolated Redis test environment
+        run: docker compose -p vacations-redis-tests -f compose.redis-tests.yml build
+      - name: Run refresh-token tests against real Redis
+        run: docker compose -p vacations-redis-tests -f compose.redis-tests.yml run --rm redis-tests
+      - name: Collect Redis logs
+        if: failure()
+        run: docker compose -p vacations-redis-tests -f compose.redis-tests.yml logs --no-color redis
+      - name: Remove isolated Redis test environment
+        if: always()
+        run: docker compose -p vacations-redis-tests -f compose.redis-tests.yml down --volumes --remove-orphans
+
   frontend:
     name: React checks
     runs-on: ubuntu-latest

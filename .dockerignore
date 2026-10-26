@@ -1,0 +1,9 @@
+**/env
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/build
+**/coverage
+.git
+.env
+**/.env

@@ -19,6 +19,9 @@ Unmanaged country, vacation, and like tables are created only in the test databa
 Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregation,
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 
+For real MySQL/schema and Redis coverage, run the separate
+[MySQL integration suite](../../tests/mysql/README.md) from the repository root.
+
 Like tests cover multiple vacations per user, duplicate-pair rejection, deletion
 of individual likes, and statistics aggregation. The unmanaged likes model maps
 the existing MySQL composite primary key `(user_id, vacation_id)`.
@@ -31,3 +34,6 @@ Auth tests include enforced CSRF,
 stateless access validation, Redis refresh rotation/revocation, current-user checks,
 and absolute expiry. Redis tests use isolated fakeredis with Lua support; no real
 Redis service is contacted.
+
+For real Redis concurrency, TTL, revocation, and outage coverage, use
+[`tests/redis`](../../tests/redis/README.md) from the repository root.

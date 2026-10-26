@@ -10,5 +10,6 @@ server.old
 .vscode
 build
 .dockerignore
+!/.dockerignore
 env
 .env

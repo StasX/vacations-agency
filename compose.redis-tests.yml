@@ -1,0 +1,34 @@
+name: vacations-redis-tests
+
+services:
+  redis:
+    build: ./Redis
+    environment:
+      REDIS_PASSWORD: redis-integration-tests-only
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=1m,mode=1777
+      - /data:rw,nosuid,nodev,size=16m,uid=999,gid=1000
+
+  redis-tests:
+    build:
+      context: .
+      dockerfile: tests/mysql/Dockerfile
+      args:
+        APPLICATION: Django
+    environment:
+      REDIS_INTEGRATION_TESTS: "1"
+      JWT_REDIS_URL: redis://redis:6379/0
+      JWT_REDIS_PASSWORD: redis-integration-tests-only
+      SECRET_KEY: redis-integration-only-signing-key-at-least-32-bytes
+      ISSUER: redis-integration-tests
+      AUDIENCE: redis-integration-tests
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHON_DOTENV_DISABLED: "1"
+    depends_on:
+      redis:
+        condition: service_healthy
+    entrypoint: ["python", "-m", "pytest", "-c", "tests/redis/pytest.ini", "-p", "no:django", "-v"]
+    command: ["tests/redis"]

@@ -20,8 +20,7 @@ Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregat
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 
 Known defects are documented with strict `xfail` tests:
-vacation error status,
-and multiple likes per user. These appear as expected failures; once a defect is
+multiple likes per user. This appears as an expected failure; once the defect is
 fixed, remove its marker (an unexpected pass fails the suite).
 
 Password tests cover randomized hashing, shared Flask/Django compatibility,

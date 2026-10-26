@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+import logging
 from werkzeug.exceptions import HTTPException
 from views.auth_view import auth_blueprint
 from views.vacations_view import vacations_blueprint
@@ -7,6 +8,8 @@ from utils.app_config import AppConfig
 from utils.logger import Logger
 from utils.csrf import init_csrf
 
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 

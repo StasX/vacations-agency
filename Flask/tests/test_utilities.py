@@ -47,15 +47,14 @@ def test_security_hash_uses_random_salt_and_utf8(monkeypatch):
     assert Security.verify(password, first)
 
 
-def test_logger_appends_timestamp_and_exception(tmp_path, monkeypatch):
-    path = tmp_path / "crashes.log"
-    monkeypatch.setattr(Logger, "_Logger__path", str(path))
-    monkeypatch.setattr(DateHandler, "now", lambda: datetime(2028, 1, 1))
-    Logger.write_log(ValueError("first"))
-    Logger.write_log("second")
-    content = path.read_text()
-    assert content.count("2028-01-01 00:00:00") == 2
-    assert "first\n" in content and "second\n" in content
+def test_logger_retains_traceback(caplog):
+    try:
+        raise ValueError('private failure')
+    except ValueError as error:
+        Logger.write_log(error)
+    assert 'private failure' in caplog.text
+    assert 'Traceback' in caplog.text
+    assert caplog.records[-1].exc_info[2] is not None
 
 
 def test_save_image_unique_names_and_safe_basename(app, image_directory):

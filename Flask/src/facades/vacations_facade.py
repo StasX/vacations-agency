@@ -55,7 +55,6 @@ class VacationsFacade:
         vacation = VacationModel(
             id, country, description, start_date, end_date, price, image)
         error = vacation.validate_update()
-        print(error)
         if error:
             raise ValidationError(error, vacation)
         last_row_id = self.logic.update_vacation(vacation)

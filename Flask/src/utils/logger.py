@@ -1,9 +1,11 @@
-from utils.date_handler import DateHandler
+import logging
+
+
 class Logger:
-    __path="./crashes.log"
     @staticmethod
-    def write_log(message):
-        with open(Logger.__path,"a") as file:
-            file.write(str(DateHandler.now())+":\n")
-            file.write(str(message)+"\n")
-            file.write("-----------------------------------------------------------------------------------\n")
+    def write_log(error):
+        """Stream errors to server logs with their original traceback."""
+        logging.getLogger(__name__).error(
+            'Unhandled application error',
+            exc_info=(type(error), error, error.__traceback__),
+        )

@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 """
 
 import os
+import logging
 
 from django.core.wsgi import get_wsgi_application
 
@@ -27,13 +28,11 @@ def application(environ, start_response):
         # Render TemplateResponse if needed
         if hasattr(app_iter, 'render'):
             app_iter.render()
-    except Exception as e:
-        print(f"Error rendering response: {e}")
-    
-    # Ensure all parts of the response are properly iterated
-    try:
         for data in app_iter:
             yield data
+    except Exception:
+        logging.getLogger(__name__).exception('WSGI response failed')
+        raise
     finally:
         if hasattr(app_iter, 'close'):
             app_iter.close()

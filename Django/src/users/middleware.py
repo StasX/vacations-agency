@@ -2,6 +2,9 @@ from django.http import JsonResponse
 from rest_framework import status
 from utils.app_config import AppConfig
 from utils.tokens import decode_token
+from utils.errors import server_error
+from django.core.exceptions import PermissionDenied, SuspiciousOperation
+from django.http import Http404
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError, DecodeError, InvalidSignatureError, InvalidAudienceError, InvalidIssuerError, ImmatureSignatureError, MissingRequiredClaimError, PyJWTError
 
@@ -11,15 +14,22 @@ JWT_ERRORS = (InvalidTokenError, DecodeError, InvalidSignatureError,
 
 
 def fix_response_middleware(get_response):
-    """Middleware that fixes and renders all responses"""
+    """Handle unexpected view errors through Django's exception middleware hook."""
+    def process_exception(request, exception):
+        if isinstance(exception, (Http404, PermissionDenied, SuspiciousOperation)):
+            return None
+        return server_error(request)
+
     def middleware(request):
         try:
             response = get_response(request)
             return response
-        except Exception as e:
-            # Return a simple JSON response for any errors
-            return JsonResponse({"error": str(e)}, status=500)
+        except (Http404, PermissionDenied, SuspiciousOperation):
+            raise
+        except Exception:
+            return server_error(request)
     
+    middleware.process_exception = process_exception
     return middleware
 
 
@@ -49,8 +59,8 @@ def auth_middleware(get_response):
                 return JsonResponse({"error": "Token expired, refresh required"}, status=406)
             except JWT_ERRORS:
                 return JsonResponse({"error": "Unauthorized"}, status=401)
-            except Exception as err:
-                return JsonResponse({"error": str(err)}, status=500)
+            except Exception:
+                return server_error(request)
         
         response = get_response(request)
         return response

@@ -70,12 +70,13 @@ def test_fetch_failure_closes_cursor(database, method):
     cursor.close.assert_called_once_with()
 
 
-def test_connection_error_propagates(monkeypatch, capsys):
+def test_connection_error_propagates(monkeypatch):
+    error = Error('offline')
     monkeypatch.setattr("utils.dal.mysql.connector.connect",
-                        MagicMock(side_effect=Error("offline")))
-    with pytest.raises(Error):
+                        MagicMock(side_effect=error))
+    with pytest.raises(Error) as caught:
         DAL()
-    assert "Connection error:" in capsys.readouterr().err
+    assert caught.value is error
 
 
 def test_close(database):

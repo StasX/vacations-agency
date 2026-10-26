@@ -1,3 +1,4 @@
+from utils.errors import server_error
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -78,8 +79,8 @@ def login(request):
         response.set_cookie(key="refresh", value=refresh_token,
                             httponly=True, secure=True, samesite="lax", max_age=60*60)
         return response
-    except Exception as err:
-        return JsonResponse({"error": str(err)}, status=500)
+    except Exception:
+        return server_error(request)
 
 
 # -------------------------------------------------------
@@ -100,8 +101,8 @@ def logout(request):
         return response
     except JWT_ERRORS:
         return JsonResponse({"error": "Bad Request"}, status=400)
-    except Exception as err:
-        return JsonResponse({"error": str(err)}, status=500)
+    except Exception:
+        return server_error(request)
 
 
 # -------------------------------------------------------
@@ -147,16 +148,10 @@ def refresh_token(request):
         response.set_cookie(key="refresh", value=refresh_token_new,
                             httponly=True, secure=True, samesite="lax", max_age=60*60)
         return response
-    except JWT_ERRORS as err:
-        print("------------------------------------------------------")
-        print(err)
-        print("------------------------------------------------------")
+    except JWT_ERRORS:
         return JsonResponse({"error": "Unauthorized"}, status=401)
-    except Exception as err:
-        print("------------------------------------------------------")
-        print(err)
-        print("------------------------------------------------------")
-        return JsonResponse({"error": str(err)}, status=500)
+    except Exception:
+        return server_error(request)
 
 
 @csrf_exempt

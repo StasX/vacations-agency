@@ -30,7 +30,11 @@ def test_wsgi_renders_and_closes_response(monkeypatch, render_error):
 
     response = Response()
     monkeypatch.setattr(wsgi, 'django_application', lambda environ, start: response)
-    assert list(wsgi.application({}, Mock())) == [b'first', b'second']
+    if render_error:
+        with pytest.raises(ValueError, match='render failed'):
+            list(wsgi.application({}, Mock()))
+    else:
+        assert list(wsgi.application({}, Mock())) == [b'first', b'second']
     response.render.assert_called_once_with()
     response.close.assert_called_once_with()
 

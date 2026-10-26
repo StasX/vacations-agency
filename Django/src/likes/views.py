@@ -1,3 +1,4 @@
+from utils.errors import server_error
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -13,8 +14,8 @@ def total_likes(request):
             "total_likes": LikeModel.objects.all().count()
         }
         return Response(json)
-    except Exception as err:
-        return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        return server_error(request)
 
 # -------------------------------------------------------
 
@@ -26,5 +27,5 @@ def likes_statistics(request):
             "vacation__country__name")).annotate(likes=Count('vacation_id'))
         serializer = LikesSerializer(likes_statistics, many=True)
         return Response(serializer.data)
-    except Exception as err:
-        return Response({"error": str(err)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception:
+        return server_error(request)

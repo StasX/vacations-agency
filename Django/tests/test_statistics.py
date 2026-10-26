@@ -65,16 +65,17 @@ def test_statistics_only_accept_get(authorized_client, path, method):
     ('/api/likes/total', 'likes.views.LikeModel.objects'),
     ('/api/likes/statistics', 'likes.views.LikeModel.objects'),
 ])
-def test_database_error_returns_500(authorized_client, path, target):
+def test_database_error_returns_500(authorized_client, path, target, caplog):
     with patch(target) as manager:
         manager.all.side_effect = RuntimeError('database unavailable')
         manager.values.side_effect = RuntimeError('database unavailable')
         response = authorized_client.get(path)
     assert response.status_code == 500
-    assert 'error' in response.json()
+    assert response.json() == {'error': 'Internal server error'}
+    assert any(record.exc_info for record in caplog.records)
+    assert 'database unavailable' in caplog.text
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='Known bug: vacation query failure returns HTTP 200')
 def test_vacation_database_error_returns_500(authorized_client):
     with patch('vacations.views.VacationModel.objects.filter', side_effect=RuntimeError('database unavailable')):
         assert authorized_client.get('/api/vacations/statistics').status_code == 500

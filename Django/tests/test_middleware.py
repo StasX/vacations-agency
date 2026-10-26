@@ -42,12 +42,14 @@ def test_valid_token_calls_downstream(token_factory):
     assert auth_middleware(lambda req: response)(request) is response
 
 
-def test_response_wrapper_handles_exception():
+def test_response_wrapper_handles_exception(caplog):
     def fail(request):
         raise ValueError('downstream failure')
     response = fix_response_middleware(fail)(RequestFactory().get('/'))
     assert response.status_code == 500
-    assert b'downstream failure' in response.content
+    assert b'downstream failure' not in response.content
+    assert 'downstream failure' in caplog.text
+    assert any(record.exc_info for record in caplog.records)
 
 
 def test_response_wrapper_preserves_response():

@@ -13,3 +13,4 @@ build
 !/.dockerignore
 env
 .env
+tests/browser/reports/

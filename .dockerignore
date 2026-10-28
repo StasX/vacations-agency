@@ -7,3 +7,6 @@
 .git
 .env
 **/.env
+reports
+**/.dockerignore
+**/Dockerfile

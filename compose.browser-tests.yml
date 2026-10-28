@@ -1,0 +1,65 @@
+name: vacations-browser-tests
+
+x-environment: &environment
+  MYSQL_HOST: mysql
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: vacation_agency
+  MYSQL_USER: integration
+  MYSQL_PASSWORD: integration-tests-only
+  SECRET_KEY: browser-tests-only-signing-key-at-least-32-bytes
+  SESSION_SECRET_KEY: browser-tests-only-session-key
+  PASSWORDS_SALT: browser-tests-only
+  ISSUER: browser-tests
+  AUDIENCE: browser-tests
+  JWT_REDIS_URL: redis://redis:6379/0
+  JWT_REDIS_PASSWORD: integration-redis-tests-only
+  PYTHON_DOTENV_DISABLED: "1"
+  FLASK_COOKIE_SECURE: "false"
+  DJANGO_COOKIE_SECURE: "false"
+  DJANGO_ALLOWED_HOSTS: localhost,vacations-statistics,dashboard
+  DJANGO_CSRF_TRUSTED_ORIGINS: http://dashboard:3000
+
+services:
+  mysql:
+    extends:
+      file: compose.mysql-tests.yml
+      service: mysql
+  redis:
+    extends:
+      file: compose.mysql-tests.yml
+      service: redis
+  catalog:
+    build: ./Flask
+    environment: *environment
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  vacations-statistics:
+    build: ./Django
+    environment: *environment
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+  dashboard:
+    build: ./React
+    depends_on:
+      vacations-statistics:
+        condition: service_healthy
+  browser-tests:
+    build: ./tests/browser
+    init: true
+    shm_size: 1gb
+    environment:
+      <<: *environment
+      BROWSER_TESTS: "1"
+    depends_on:
+      catalog:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
+    volumes:
+      - ./tests/browser/reports:/reports

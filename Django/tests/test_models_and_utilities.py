@@ -38,7 +38,7 @@ def test_email_is_unique(user):
 
 
 @pytest.mark.parametrize('model,table,managed', [
-    (RoleModel, 'roles', True), (UserModel, 'users', True),
+    (RoleModel, 'roles', False), (UserModel, 'users', False),
     (CountryModel, 'countries', False), (VacationModel, 'vacations', False),
     (LikeModel, 'likes', False),
 ])

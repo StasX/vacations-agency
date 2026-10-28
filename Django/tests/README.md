@@ -15,7 +15,8 @@ The suite uses test credentials and an in-memory SQLite database. It does not
 load the repository `.env`, require a running Docker/MySQL service, or modify production data.
 Development requirements include production dependencies, so installing them may
 require MySQL client build prerequisites for `mysqlclient`.
-Unmanaged country, vacation, and like tables are created only in the test database.
+All five shared tables (roles, users, countries, vacations, and likes) are unmanaged
+by Django and explicitly created only in the isolated test database.
 Endpoint tests exercise real middleware, JWT verification, ORM queries, aggregation,
 and serialization. SQLite does not verify MySQL-specific schema or deployment behavior.
 

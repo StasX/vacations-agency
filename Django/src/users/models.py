@@ -5,6 +5,7 @@ class RoleModel(Model):
     role_type = CharField(max_length=20)
 
     class Meta:
+        managed = False
         db_table = 'roles'
 # ------------------------------------------------------------------------------------------
 
@@ -17,4 +18,5 @@ class UserModel(Model):
     role = ForeignKey(RoleModel, DO_NOTHING)
 
     class Meta:
+        managed = False
         db_table = 'users'

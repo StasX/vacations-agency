@@ -37,12 +37,13 @@ their filenames. Redis stores shared account-status versions and Django refresh
 token records; these are not MySQL tables or Django migrations. See the repository
 README's password-storage section for account-status provisioning and recovery.
 
-## Django model caveat
+## Django model mappings
 
-`CountryModel`, `VacationModel`, and `LikeModel` explicitly set `managed = False`.
-`RoleModel` and `UserModel` currently omit that setting, so Django considers them
-managed. This is a configuration inconsistency, not an assignment of shared-schema
-ownership to Django. This document does not change those model settings.
+All five shared models (`RoleModel`, `UserModel`, `CountryModel`, `VacationModel`,
+and `LikeModel`) explicitly set `managed = False`. Django maps and queries the
+existing tables without owning their creation, alteration, or deletion. ORM writes,
+including password hash upgrades, still work. Schema changes belong to the shared
+database migration tool.
 
 Do not generate or apply Django migrations that create, alter, or delete the shared
 tables. Review any `makemigrations` output for `users`, `vacations`, and `likes`

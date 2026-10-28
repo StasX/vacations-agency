@@ -206,7 +206,7 @@ schema migrations at startup. Existing database volumes use the explicit
 rebuilding the MySQL image does not apply seed changes to them.
 
 See [database ownership and migrations](docs/database-ownership.md) for table
-responsibilities, Django model caveats, and the deployment procedure.
+responsibilities, Django model mappings, and the deployment procedure.
 
 ## Password Storage
 

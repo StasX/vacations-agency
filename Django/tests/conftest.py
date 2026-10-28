@@ -27,7 +27,7 @@ def redis_store(monkeypatch):
 def django_db_setup(django_db_setup, django_db_blocker):
     # Django intentionally skips these externally owned tables during migrations.
     with django_db_blocker.unblock(), connection.schema_editor() as editor:
-        for model in (CountryModel, VacationModel, LikeModel):
+        for model in (RoleModel, UserModel, CountryModel, VacationModel, LikeModel):
             editor.create_model(model)
 
 

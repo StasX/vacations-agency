@@ -201,7 +201,8 @@ Compose persists vacation images in the `vacation-images` named volume.
 The MySQL service defines all five shared tables through `MySQL/data.sql`.
 Flask manages customer and vacation data; Django primarily reads statistics and
 also upgrades password hashes during login. Neither backend currently runs shared
-schema migrations. Existing database volumes need explicit SQL upgrades;
+schema migrations at startup. Existing database volumes use the explicit
+`database-migrations` maintenance service with `--plan` and `--apply`;
 rebuilding the MySQL image does not apply seed changes to them.
 
 See [database ownership and migrations](docs/database-ownership.md) for table

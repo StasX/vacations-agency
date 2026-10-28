@@ -83,6 +83,13 @@ jobs:
       - name: Test Flask against MySQL
         if: ${{ !cancelled() }}
         run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml run --rm flask-tests
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Test migration history validation
+        run: |
+          python -m pip install pytest
+          python -m pytest -c tests/migrations/pytest.ini tests/migrations -q
       - name: Collect service logs
         if: failure()
         run: docker compose -p vacations-mysql-tests -f compose.mysql-tests.yml logs --no-color mysql redis

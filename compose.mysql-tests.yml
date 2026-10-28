@@ -76,4 +76,4 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-    command: ["tests/mysql/test_flask.py"]
+    command: ["tests/mysql/test_flask.py", "tests/mysql/test_migrations.py"]

@@ -42,6 +42,22 @@ services:
 
   # ------------------------------------------------------------------------------------------
 
+  # Explicit shared-schema maintenance; never replays seed data.
+  database-migrations:
+    profiles: [tools]
+    build:
+      context: ./MySQL
+      dockerfile: Dockerfile.migrations
+    environment:
+      MYSQL_HOST: vacations-database
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      vacations-database:
+        condition: service_healthy
+
   # Django service: 
   vacations-statistics:
     depends_on:

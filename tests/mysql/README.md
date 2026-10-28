@@ -28,3 +28,15 @@ Coverage includes MySQL composite likes keys, duplicate/case-insensitive email
 constraints, date/price round trips, aggregation, login/refresh with CSRF, Flask
 validation and missing records, unchanged updates, and connection cleanup.
 These complement the regular unit suites; they are not browser end-to-end tests.
+
+The Flask runner also runs shared-schema migration tests: upgrade a populated
+legacy password column while preserving all domain rows, baseline a current
+schema, reject changed migration history, serialize concurrent runners, and
+require explicit recovery after interrupted DDL. Migration tooling is copied into
+the test image; it does not replay the seed dump to upgrade existing tables.
+
+History-validation tests that do not need Docker can run independently:
+
+```sh
+python -m pytest -c tests/migrations/pytest.ini tests/migrations -q
+```

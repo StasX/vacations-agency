@@ -196,6 +196,17 @@ Vacation uploads accept JPEG, PNG, and WebP files up to 5 MB and 20 million
 pixels. Flask verifies and re-encodes their contents before saving them. Docker
 Compose persists vacation images in the `vacation-images` named volume.
 
+## Shared Database Ownership
+
+The MySQL service defines all five shared tables through `MySQL/data.sql`.
+Flask manages customer and vacation data; Django primarily reads statistics and
+also upgrades password hashes during login. Neither backend currently runs shared
+schema migrations. Existing database volumes need explicit SQL upgrades;
+rebuilding the MySQL image does not apply seed changes to them.
+
+See [database ownership and migrations](docs/database-ownership.md) for table
+responsibilities, Django model caveats, and the deployment procedure.
+
 ## Password Storage
 
 Account authentication status lives in Redis under `vacations:auth:status:<user_id>`;
@@ -263,7 +274,6 @@ Bandit security scans.
 
 - Restrict public exposure of internal services.
 - Harden Django debug, allowed-host, and CORS settings for production.
-- Document database ownership and migrations between the two backends.
 
 ## License
 

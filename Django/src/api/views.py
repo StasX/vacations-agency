@@ -19,6 +19,10 @@ from utils.errors import server_error
 from utils.tokens import decode_token
 
 
+def health(request):
+    return HttpResponse(status=200)
+
+
 def health_check(request):
     if request.method == 'GET':
         return JsonResponse({'status': 'OK'})

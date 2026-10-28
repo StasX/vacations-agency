@@ -31,6 +31,11 @@ app.register_blueprint(vacations_blueprint)
 app.register_blueprint(likes_blueprint)
 
 
+@app.get('/health')
+def health():
+    return '', 200
+
+
 @app.errorhandler(404)
 @app.errorhandler(ResourceNotFoundError)
 def page_not_found(error):

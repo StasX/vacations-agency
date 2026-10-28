@@ -4,6 +4,19 @@ from io import BytesIO
 import pytest
 
 
+@pytest.mark.parametrize('method', ['get', 'head'])
+def test_health_probe(client, app, no_redis, method):
+    no_redis.get.side_effect = AssertionError('Health probe must not access Redis')
+    response = getattr(client, method)('/health')
+    assert response.status_code == 200
+    assert response.data == b''
+    assert 'Location' not in response.headers
+    assert 'Set-Cookie' not in response.headers
+    app.test_dal.assert_not_called()
+    assert not app.test_dal.method_calls
+    no_redis.get.assert_not_called()
+
+
 @pytest.mark.parametrize("path", ["/", "/login", "/register"])
 def test_public_pages(client, path):
     assert client.get(path).status_code == 200

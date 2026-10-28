@@ -29,5 +29,5 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000 || exit 1
+    CMD curl -fsS --max-time 2 http://localhost:8000/health || exit 1
 ENTRYPOINT ["sh", "-c", "exec gunicorn --bind ${APP_HOST}:8000 --config /app/gunicorn.conf.py api.wsgi:application"]

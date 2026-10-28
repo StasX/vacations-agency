@@ -2,6 +2,18 @@ import pytest
 from django.urls import resolve
 
 
+@pytest.mark.parametrize('method', ['get', 'head'])
+def test_health_probe(client, monkeypatch, method):
+    def unavailable(*args, **kwargs):
+        pytest.fail('Health probe must not access Redis')
+    monkeypatch.setattr('utils.refresh_tokens.get_redis', unavailable)
+    response = getattr(client, method)('/health')
+    assert response.status_code == 200
+    assert response.content == b''
+    assert 'Location' not in response
+    assert not response.cookies
+
+
 def test_health_check(client):
     response = client.get('/')
     assert response.status_code == 200

@@ -16,6 +16,8 @@ def test_auth_guards(app, role, method, allowed):
         if role:
             session["current_user"] = {"id": 7, "role": role}
             session['auth_status'] = 'enabled:00000000-0000-4000-8000-000000000007'
+            from utils.security import Security
+            session['password_fingerprint'] = Security.password_fingerprint('test-password-hash')
         if allowed:
             assert getattr(AuthFacade(), method)() is None
         else:

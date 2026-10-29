@@ -1,6 +1,7 @@
 from base64 import b64encode
 from hashlib import pbkdf2_hmac, sha512
-from hmac import compare_digest
+from hmac import compare_digest, new as hmac_new
+from flask import current_app
 from secrets import token_urlsafe
 
 from .app_config import AppConfig
@@ -8,6 +9,14 @@ from .app_config import AppConfig
 
 class Security:
     iterations = 1_000_000
+
+    @staticmethod
+    def password_fingerprint(stored_hash):
+        # Sessions are signed but readable: never put the password hash in them.
+        key = current_app.secret_key
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        return hmac_new(key, ('flask-session-password:' + stored_hash).encode('utf-8'), 'sha256').hexdigest()
 
     @staticmethod
     def hash(plain_text):

@@ -37,6 +37,12 @@ def app(monkeypatch):
     monkeypatch.setitem(application.config, "SECRET_KEY", "test-only-secret")
     monkeypatch.setattr(application, "test_dal",
                         dal.return_value, raising=False)
+    from flask import session
+    from logic.auth_logic import AuthLogic
+    account_lookup = MagicMock(side_effect=lambda user_id: {
+        **session['current_user'], 'password': 'test-password-hash'})
+    monkeypatch.setattr(AuthLogic, 'get_user_by_id', account_lookup)
+    monkeypatch.setattr(application, 'test_account_lookup', account_lookup, raising=False)
     yield application
 
 
@@ -80,6 +86,9 @@ def sign_in(client):
         with client.session_transaction() as session:
             session["current_user"] = user
             session['auth_status'] = 'enabled:00000000-0000-4000-8000-000000000007'
+            with client.application.app_context():
+                from utils.security import Security
+                session['password_fingerprint'] = Security.password_fingerprint('test-password-hash')
         return user
     return login
 

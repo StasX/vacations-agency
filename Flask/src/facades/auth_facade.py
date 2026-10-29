@@ -6,6 +6,7 @@ from models.role_model import RoleModel
 from models.client_errors import ValidationError, AuthError
 from utils.security import Security
 from utils import auth_status
+from hmac import compare_digest
 
 
 class AuthFacade:
@@ -28,11 +29,14 @@ class AuthFacade:
             if not auth_status.is_enabled(status):
                 raise AuthError("Invalid email or password.", credentials)
             if Security.needs_rehash(user["password"]):
-                self.logic.update_password(user["id"], Security.hash(password))
+                user['password'] = Security.hash(password)
+                self.logic.update_password(user["id"], user['password'])
+        fingerprint = Security.password_fingerprint(user['password'])
         del user["password"]
         session.clear()
         session["current_user"] = user
         session['auth_status'] = status
+        session['password_fingerprint'] = fingerprint
 
     # Register
     def register(self):
@@ -57,10 +61,12 @@ class AuthFacade:
             status = auth_status.initialize_status(user['id'])
             if not auth_status.is_enabled(status):
                 raise AuthError("Account disabled.")
+        fingerprint = Security.password_fingerprint(user['password'])
         del user["password"]
         session.clear()
         session["current_user"] = user
         session['auth_status'] = status
+        session['password_fingerprint'] = fingerprint
 
     def logout(self):
         session.clear()
@@ -80,7 +86,21 @@ class AuthFacade:
 
     @staticmethod
     def check_status(user):
+        if not isinstance(user, dict) or type(user.get('id')) is not int or user['id'] <= 0:
+            session.clear()
+            raise AuthError("Your session is no longer valid.")
         status = auth_status.get_status(user['id'])
         if not auth_status.is_enabled(status) or session.get('auth_status') != status:
+            session.clear()
+            raise AuthError("Your session is no longer valid.")
+        logic = AuthLogic()
+        try:
+            current = logic.get_user_by_id(user['id'])
+        finally:
+            logic.close()
+        fingerprint = session.get('password_fingerprint')
+        if (not current or current['role'] != user.get('role')
+                or not isinstance(fingerprint, str)
+                or not compare_digest(fingerprint, Security.password_fingerprint(current['password']))):
             session.clear()
             raise AuthError("Your session is no longer valid.")

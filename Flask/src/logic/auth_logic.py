@@ -20,6 +20,11 @@ class AuthLogic:
         user = self.dal.get_scalar(sql, params)
         return user
 
+    def get_user_by_id(self, user_id):
+        return self.dal.get_scalar(
+            "SELECT id, first_name, last_name, email, password, role_id AS role FROM users WHERE id=%s",
+            (user_id,))
+
     def update_password(self, user_id, password_hash):
         return self.dal.update("UPDATE users SET password=%s WHERE id=%s", (password_hash, user_id))
 

@@ -11,6 +11,16 @@ from utils.dal import DAL
 from utils.security import Security
 
 
+def session_fingerprint(user_id):
+    dal = DAL()
+    try:
+        user = dal.get_scalar('SELECT password FROM users WHERE id=%s', (user_id,))
+        with app.app_context():
+            return Security.password_fingerprint(user['password'])
+    finally:
+        dal.close()
+
+
 @pytest.fixture
 def client(tmp_path):
     app.config.update(TESTING=True, CSRF_ENABLED=True)
@@ -125,10 +135,32 @@ def test_vacation_country_name_reaches_cards_from_real_mysql(client, admin, trip
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': role, 'first_name': 'Test', 'last_name': 'User'}
         session['auth_status'] = get_status(admin)
+        session['password_fingerprint'] = session_fingerprint(admin)
     response = client.get('/vacations')
     assert response.status_code == 200
     assert b'<span class="card-city">Greece</span>' in response.data
     assert b'alt="Greece"' in response.data
+
+
+@pytest.mark.parametrize('change', ['deleted', 'demoted', 'password'])
+def test_database_account_changes_revoke_flask_admin(client, admin, trip, sql, change):
+    from utils.auth_status import get_status
+    with client.session_transaction() as session:
+        session['current_user'] = {'id': admin, 'role': 1}
+        session['auth_status'] = get_status(admin)
+        session['password_fingerprint'] = session_fingerprint(admin)
+    assert client.get(f'/vacations/{trip}/edit').status_code == 200
+    if change == 'deleted':
+        sql.execute('DELETE FROM users WHERE id=%s', (admin,))
+    elif change == 'demoted':
+        sql.execute('UPDATE users SET role_id=2 WHERE id=%s', (admin,))
+    else:
+        sql.execute('UPDATE users SET password=%s WHERE id=%s', (Security.hash('Changed123!'), admin))
+    response = client.get(f'/vacations/{trip}/edit')
+    assert response.status_code == 302
+    assert response.location.endswith('/login')
+    with client.session_transaction() as session:
+        assert 'current_user' not in session
 
 
 def test_authenticated_request_closes_real_mysql_connection(client, admin):
@@ -136,10 +168,13 @@ def test_authenticated_request_closes_real_mysql_connection(client, admin):
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
         from utils.auth_status import get_status
         session['auth_status'] = get_status(admin)
+        session['password_fingerprint'] = session_fingerprint(admin)
     # Observe the actual handles during the request; do not replace the driver.
     seen = []
     def capture(sender, template, context, **extra):
-        seen.extend(handle.connection for handle in g.get('_database_handles', []))
+        # Authentication closes its lookup immediately, before rendering.
+        seen.extend(handle.connection for handle in g.get('_database_handles', [])
+                    if handle.connection is not None)
     from flask import before_render_template
     with before_render_template.connected_to(capture, app):
         assert client.get('/vacations').status_code == 200
@@ -155,6 +190,7 @@ def test_redis_disabled_or_missing_status_blocks_flask_session(client, admin, mi
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1}
         session['auth_status'] = get_status(admin)
+        session['password_fingerprint'] = session_fingerprint(admin)
     try:
         if missing:
             store.delete(key)
@@ -172,6 +208,7 @@ def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, 
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
         from utils.auth_status import get_status
         session['auth_status'] = get_status(admin)
+        session['password_fingerprint'] = session_fingerprint(admin)
     client.get(f'/vacations/{trip}/edit')
     with client.session_transaction() as session:
         token = session['_csrf_token']

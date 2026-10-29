@@ -64,3 +64,52 @@ def test_registration_initialization_never_overwrites_disabled_status(no_redis):
 @pytest.mark.parametrize('status', [None, '', 'enabled:', 'enabled:initial', 'enabled:invalid'])
 def test_missing_or_malformed_status_is_not_enabled(status):
     assert not auth_status.is_enabled(status)
+
+
+@pytest.mark.parametrize('change', ['deleted', 'demoted', 'password', 'old_session'])
+@pytest.mark.parametrize('path,method', [
+    ('/vacations', 'get'), ('/vacations/add', 'get'),
+    ('/vacations/1/edit', 'post'), ('/vacations/1/delete', 'post'),
+    ('/likes/like/1', 'post'), ('/vacations/images/test.jpg', 'get'),
+])
+def test_database_changes_invalidate_session(client, app, sign_in, change, path, method):
+    user = sign_in(role=1)
+    current = {**user, 'password': 'test-password-hash'}
+    if change == 'deleted':
+        current = None
+    elif change == 'demoted':
+        current['role'] = 2
+    elif change == 'password':
+        current['password'] = 'changed-password-hash'
+    else:
+        with client.session_transaction() as saved:
+            saved.pop('password_fingerprint')
+    app.test_account_lookup.side_effect = None
+    app.test_account_lookup.return_value = current
+    response = getattr(client, method)(path)
+    assert response.status_code == 302
+    assert response.location.endswith('/login')
+    with client.session_transaction() as saved:
+        assert 'current_user' not in saved
+    app.test_dal.insert.assert_not_called()
+    app.test_dal.update.assert_not_called()
+    app.test_dal.delete.assert_not_called()
+
+
+def test_database_lookup_failure_does_not_authorize_admin(client, app, sign_in):
+    sign_in(role=1)
+    app.test_account_lookup.side_effect = RuntimeError('database unavailable')
+    assert client.post('/vacations/1/delete').status_code == 500
+    app.test_dal.delete.assert_not_called()
+
+
+def test_login_upgrade_fingerprint_uses_committed_password(client, app):
+    from hashlib import sha512
+    from utils.app_config import AppConfig
+    app.test_dal.get_scalar.return_value = dict(
+        id=7, role=1, password=sha512(('Abc123' + AppConfig.passwords_salt).encode()).hexdigest())
+    assert client.post('/login', data={'email': 'test@example.com', 'password': 'Abc123'}).status_code == 302
+    stored_hash = app.test_dal.update.call_args.args[1][0]
+    with client.session_transaction() as saved, app.app_context():
+        assert saved['password_fingerprint'] == Security.password_fingerprint(stored_hash)
+        assert stored_hash not in str(dict(saved))

@@ -220,7 +220,10 @@ If Redis data is lost, recover status from a trusted backup or explicitly
 review and enable accounts; do not bulk-enable them automatically. Redis outages block authenticated
 requests. Dashboard requests also recheck MySQL for deletion, role changes, and
 password changes. Previously issued tokens without the status claim require a
-new login.
+new login. Flask protected requests also recheck MySQL for account deletion,
+role changes, and password changes. Flask sessions created before password
+fingerprints were introduced require a new login. Password fingerprints are
+keyed digests; password hashes are never stored in the browser session.
 
 Flask and Django share PBKDF2-SHA256 password hashes with 1,000,000 iterations
 and a random salt for each password. Existing SHA-512 hashes are upgraded on

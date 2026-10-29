@@ -167,6 +167,13 @@ jobs:
           mkdir -p reports
           npm run test:ci -- --json --outputFile=reports/jest.json 2>&1 | tee reports/jest.log
 
+      - name: Check development API proxy
+        if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        run: |
+          set -eo pipefail
+          mkdir -p reports
+          npm run test:proxy 2>&1 | tee reports/proxy.log
+
       - name: Check TypeScript
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
         run: |

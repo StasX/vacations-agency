@@ -42,6 +42,10 @@ docker compose --env-file .env.development -f docker-compose.yml -f compose.deve
 Vite proxies `/api/` to Django using the server-only `API_PROXY_TARGET` setting.
 Without it, local `npm start` still proxies to `http://127.0.0.1:8000`. Browser
 API URLs stay relative and do not contain infrastructure credentials.
+The proxy preserves the browser's Host and Origin, matching production Nginx.
+Rewriting Host to the internal Django address causes host-allowlist failures or
+CSRF origin mismatches; adding broad trusted origins is not needed for same-origin
+requests. Restart Vite after changing its configuration or proxy target.
 
 The override names its project `vacations-development`, so its databases, Redis,
 and uploads use separate project volumes. Do not attach production volumes to this

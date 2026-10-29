@@ -211,3 +211,29 @@ def test_non_admin_cannot_create_dashboard_session(client, user):
                            content_type='application/json')
     assert response.status_code == 403
     assert 'refresh' not in response.cookies
+
+
+def test_development_proxy_preserves_same_origin_authentication(user, settings):
+    settings.ALLOWED_HOSTS = ['localhost']
+    settings.CSRF_TRUSTED_ORIGINS = []
+    settings.CSRF_COOKIE_SECURE = False
+    settings.AUTH_COOKIE_SECURE = False
+    client = Client(enforce_csrf_checks=True, HTTP_HOST='localhost:3000')
+
+    def options():
+        response = client.get('/api/auth/csrf')
+        assert response.status_code == 200
+        return {'HTTP_ORIGIN': 'http://localhost:3000',
+                'HTTP_X_CSRFTOKEN': response.json()['csrf_token']}
+
+    response = client.post('/api/auth/login',
+        {'email': user.email, 'password': 'Password123!'},
+        content_type='application/json', **options())
+    assert response.status_code == 200
+    assert not response.cookies['refresh']['secure']
+    access = response.json()['access_token']
+    for path in ('/api/users/total', '/api/likes/total',
+                 '/api/vacations/statistics', '/api/likes/statistics'):
+        assert client.get(path, HTTP_AUTHORIZATION=access).status_code == 200
+    assert client.post('/api/auth/refresh-token', **options()).status_code == 200
+    assert client.delete('/api/auth/logout', **options()).status_code == 204

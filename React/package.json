@@ -35,6 +35,7 @@
     "test:unit": "npm run test:ci -- --testPathPattern=tests/unit",
     "test:integration": "npm run test:ci -- --testPathPattern=tests/integration",
     "test:ci": "npm run test -- --watchAll=false --runInBand",
+    "test:proxy": "node --test tests/proxy/vite-proxy.test.mjs",
     "test:coverage": "npm run test:ci -- --coverage",
     "preview": "vite preview --host 0.0.0.0"
   },

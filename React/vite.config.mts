@@ -6,7 +6,8 @@ export default defineConfig({
     server: {
         port: 3000,
         proxy: {
-            '/api/': { target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000', changeOrigin: true },
+            // Keep the browser host so Django sees the same origin for CSRF checks.
+            '/api/': { target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000', changeOrigin: false },
         },
     },
     build: { outDir: 'build' },

@@ -8,6 +8,7 @@ npm test -- --watchAll  # interactive watch mode
 npm run test:unit       # isolated utility and state tests
 npm run test:integration # service/store and component integration tests
 npm run test:ci         # run once, suitable for CI
+npm run test:proxy      # real Vite proxy/header forwarding over local HTTP
 npm run test:coverage   # run once and generate coverage/
 ```
 
@@ -15,6 +16,11 @@ On PowerShell systems that block `npm.ps1`, use `npm.cmd` instead of `npm`.
 The suite uses Jest 29, Babel, and React Testing Library 16.
 TypeScript and JSX use Babel; CSS and assets use local mocks.
 No running Django API, database, Docker containers, or external network is needed.
+The proxy test uses Node's test runner and temporary loopback HTTP servers. It
+loads the real Vite configuration and verifies browser Host/Origin headers,
+authorization/CSRF headers, and cookies pass through unchanged. Django separately
+tests login, all four statistics endpoints, refresh, and logout with preserved
+same-origin headers and CSRF checks enabled.
 
 ## Directory layout
 

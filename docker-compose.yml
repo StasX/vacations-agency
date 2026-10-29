@@ -1,6 +1,7 @@
 services:
 
   vacations-redis:
+    container_name: vacations-redis
     image: vacations-redis:local
     build: ./Redis
     environment:
@@ -22,17 +23,17 @@ services:
 
   # MySQL service: 
   vacations-database:
+    container_name: vacations-database
     image: sm1986/vacations-database:1.0
     build: ./MySQL
-    container_name: vacations-database
     volumes:
       - vacations-volume:/var/lib/mysql
     environment:
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in the selected environment file}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in the selected environment file}
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -60,6 +61,7 @@ services:
 
   # Django service: 
   vacations-statistics:
+    container_name: vacations-statistics
     depends_on:
       vacations-redis:
         condition: service_healthy
@@ -67,21 +69,22 @@ services:
         condition: service_healthy
     image: sm1986/vacations-statistics:1.0
     build: ./Django
-    container_name: vacations-statistics
     environment:
-      DJANGO_DEBUG: ${DJANGO_DEBUG:-false}
+      DJANGO_SETTINGS_MODULE: api.settings.production
+      DJANGO_DEBUG: "false"
+      PYTHON_DOTENV_DISABLED: "1"
       JWT_REDIS_URL: redis://vacations-redis:6379/0
       JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
       DJANGO_CORS_ALLOWED_ORIGINS: ${DJANGO_CORS_ALLOWED_ORIGINS:-}
-      DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-true}
+      DJANGO_COOKIE_SECURE: "true"
       DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
       MYSQL_HOST: vacations-database
-      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_PORT: "3306"
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD} 
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in the selected environment file}
       PASSWORDS_SALT: ${PASSWORDS_SALT}
       ISSUER: ${ISSUER}
       AUDIENCE: ${AUDIENCE}
@@ -94,6 +97,7 @@ services:
 
   # Flask service: 
   vacations-catalog:
+    container_name: vacations-catalog
     depends_on:
       vacations-redis:
         condition: service_healthy
@@ -101,22 +105,23 @@ services:
         condition: service_healthy
     image: sm1986/vacations-catalog:1.0
     build: ./Flask 
-    container_name: vacations-catalog
     volumes:
       - vacation-images:/app/static/images/vacations
     environment:
+      APP_ENV: production
+      PYTHON_DOTENV_DISABLED: "1"
       MYSQL_HOST: vacations-database
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Set SESSION_SECRET_KEY in the selected environment file}
       JWT_REDIS_URL: redis://vacations-redis:6379/0
       JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
-      FLASK_COOKIE_SECURE: ${FLASK_COOKIE_SECURE:-true}
+      FLASK_COOKIE_SECURE: "true"
       PASSWORDS_SALT: ${PASSWORDS_SALT}
     restart: unless-stopped
     ports:
-      - 5000:5000
+      - 127.0.0.1:5000:5000
     networks:
       - default
       - redis-backend
@@ -125,14 +130,14 @@ services:
 
   # React service:
   vacations-statistics-frontend:
+    container_name: vacations-statistics-frontend
     depends_on:
       - vacations-statistics
     image: sm1986/vacations-statistics-frontend:1.0
     build: ./React
-    container_name: vacations-statistics-frontend
     restart: unless-stopped
     ports:
-      - 3000:3000
+      - 127.0.0.1:3000:3000
 
 # ------------------------------------------------------------------------------------------
 

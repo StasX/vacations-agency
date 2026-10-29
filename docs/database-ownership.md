@@ -66,10 +66,10 @@ Use the explicit Compose maintenance service for both existing and freshly
 initialized databases. It defaults to a plan and never replays seed data:
 
 ```sh
-docker compose build database-migrations
-docker compose run --rm database-migrations --plan
+docker compose --env-file .env.production build database-migrations
+docker compose --env-file .env.production run --rm database-migrations --plan
 # After backup and review of the plan:
-docker compose run --rm database-migrations --apply
+docker compose --env-file .env.production run --rm database-migrations --apply
 ```
 
 The service uses the deployment's MySQL environment settings, connects internally
@@ -78,6 +78,8 @@ create/update its ledger. It is in the `tools` profile and is not run by normal
 `docker compose up`. It does not mount or replace the database volume. `--plan`
 reads the schema/history without creating a ledger or changing data; both modes
 use a database-specific advisory lock to serialize migration runners.
+Use the development environment file and override instead when maintaining the
+development project; see [environment selection](configuration.md).
 
 Migration `0001__password_hash_capacity.py` verifies the five shared tables exist
 and widens a legacy non-null `VARCHAR` password column to 128 characters when
@@ -133,7 +135,7 @@ After a reviewed repair, or confirmation that the unchanged migration can safely
 resume, use its explicit version:
 
 ```sh
-docker compose run --rm database-migrations --apply --retry-failed 0001
+docker compose --env-file .env.production run --rm database-migrations --apply --retry-failed 0001
 ```
 
 Retry still checks the original filename and checksum. Do not edit the failed

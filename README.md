@@ -142,20 +142,18 @@ git clone https://github.com/StasX/vacations-agency.git
 cd vacations-agency
 ```
 
-Copy `example.env` to `.env` and configure the database credentials, signing
-secrets, and token settings before running the services. Review
-`docker-compose.yml` before public deployment; the current configuration is
-development-oriented.
+Development and production use separate configuration. For local HTTP development:
 
 ```bash
-docker compose up -d --build
+cp config/development.env.example .env.development
+docker compose --env-file .env.development -f docker-compose.yml -f compose.development.yml up -d --build
 ```
 
 Inspect the services and logs:
 
 ```bash
-docker compose ps
-docker compose logs -f
+docker compose --env-file .env.development -f docker-compose.yml -f compose.development.yml ps
+docker compose --env-file .env.development -f docker-compose.yml -f compose.development.yml logs -f
 ```
 
 Access the applications using these default ports:
@@ -163,29 +161,28 @@ Access the applications using these default ports:
 | Service | Local address | Purpose |
 | --- | --- | --- |
 | Flask | `http://localhost:5000` | Customer catalog and vacation administration |
-| Nginx / React | `http://localhost:3000` | Statistics dashboard and `/api/` proxy |
+| React / Vite | `http://localhost:3000` | Statistics dashboard and `/api/` proxy |
+| Django | `http://localhost:8000` | Development API and `/health` |
 
-For remote access, replace `localhost` in the browser address with the server's
-hostname or IP address. The frontend does not require a separate API host setting.
-Use HTTPS for remote deployments so browsers can send Django's Secure refresh
-cookie. The dashboard accesses Django through Nginx at `/api/`. Django listens
-on port 8000 inside the Compose network and does not publish a host port.
-
-Flask session cookies explicitly use `HttpOnly`, `SameSite=Lax`, and `Secure`
-by default. Keep `FLASK_COOKIE_SECURE=true` for HTTPS deployments. For local
-HTTP development, set `FLASK_COOKIE_SECURE=false` and
-`DJANGO_COOKIE_SECURE=false` in `.env` before starting the applications.
-
-After changing the frontend or its Nginx configuration, rebuild its container:
+Development uses Flask/Django reload servers and Vite, with separate project
+volumes. Production uses Gunicorn and Nginx, debugging off, and secure cookies.
+For production, copy the production template and supply secrets and actual domains:
 
 ```bash
-docker compose up -d --build vacations-statistics-frontend
+cp config/production.env.example .env.production
+# Fill in .env.production before starting:
+docker compose --env-file .env.production up -d --build
 ```
 
-Stop the application:
+Production application ports bind to host loopback for an HTTPS reverse proxy;
+MySQL, Redis, and Django have no published production ports. See
+[configuration and deployment](docs/configuration.md) for environment selection,
+TLS routing, persistent-volume compatibility, and maintenance commands.
+
+Stop the development application with the same environment and Compose files:
 
 ```bash
-docker compose down
+docker compose --env-file .env.development -f docker-compose.yml -f compose.development.yml down
 ```
 
 > **Warning:** `docker compose down -v` also removes persistent volumes, including database data.
@@ -240,7 +237,8 @@ database volumes require separate password resets for the old demo accounts.
 
 ## Local Frontend Development
 
-With Node.js 24 and Django running locally on port 8000:
+With Node.js 24 and Django using the development settings on port 8000
+(see [configuration](docs/configuration.md)):
 
 ```bash
 cd React

@@ -14,6 +14,7 @@ from redis.exceptions import RedisError
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 app = Flask(__name__)
+app.config.from_object(AppConfig.flask_config)
 app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
 # Create session secret key:

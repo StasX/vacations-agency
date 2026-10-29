@@ -20,6 +20,7 @@ x-test-environment: &test-environment
 
 services:
   redis:
+    container_name: vacations-mysql-tests-redis
     build: ./Redis
     environment:
       REDIS_PASSWORD: integration-redis-tests-only
@@ -31,6 +32,7 @@ services:
       - /data:rw,nosuid,nodev,size=16m,uid=999,gid=1000
 
   mysql:
+    container_name: vacations-mysql-tests-database
     build: ./MySQL
     environment:
       MYSQL_DATABASE: vacation_agency
@@ -47,6 +49,7 @@ services:
       start_period: 20s
 
   django-tests:
+    container_name: vacations-mysql-tests-django
     build:
       context: .
       dockerfile: tests/mysql/Dockerfile
@@ -63,6 +66,7 @@ services:
     command: ["tests/mysql/test_django.py"]
 
   flask-tests:
+    container_name: vacations-mysql-tests-flask
     build:
       context: .
       dockerfile: tests/mysql/Dockerfile

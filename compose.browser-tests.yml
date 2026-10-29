@@ -1,6 +1,9 @@
 name: vacations-browser-tests
 
 x-environment: &environment
+  APP_ENV: development
+  DJANGO_SETTINGS_MODULE: api.settings.development
+  DJANGO_DEBUG: "false"
   MYSQL_HOST: mysql
   MYSQL_PORT: "3306"
   MYSQL_DATABASE: vacation_agency
@@ -21,10 +24,12 @@ x-environment: &environment
 
 services:
   mysql:
+    container_name: vacations-browser-tests-database
     extends:
       file: compose.mysql-tests.yml
       service: mysql
   redis:
+    container_name: vacations-browser-tests-redis
     extends:
       file: compose.mysql-tests.yml
       service: redis

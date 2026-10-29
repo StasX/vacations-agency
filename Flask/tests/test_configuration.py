@@ -5,14 +5,43 @@ import pytest
 SRC = Path(__file__).resolve().parents[1] / "src"
 
 
-@pytest.mark.parametrize("value, expected", [(None, True), ("true", True), (" YES ", True), ("false", False), ("0", False)])
+@pytest.mark.parametrize("value, expected", [(None, False), ("true", True), (" YES ", True), ("false", False), ("0", False)])
 def test_session_cookie_secure_environment(monkeypatch, value, expected):
+    monkeypatch.setenv('APP_ENV', 'development')
     monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
     monkeypatch.delenv("FLASK_COOKIE_SECURE", raising=False)
     if value is not None:
         monkeypatch.setenv("FLASK_COOKIE_SECURE", value)
     config = runpy.run_path(str(SRC / "utils/app_config.py"))["AppConfig"]
     assert config.session_cookie_secure is expected
+
+
+def test_production_profile_enforces_secure_defaults(monkeypatch):
+    monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+    monkeypatch.delenv('APP_ENV', raising=False)
+    monkeypatch.setenv('FLASK_COOKIE_SECURE', 'false')
+    monkeypatch.setenv('FLASK_DEBUG', 'true')
+    config = runpy.run_path(str(SRC / 'utils/app_config.py'))['AppConfig']
+    assert config.session_cookie_secure is True
+    assert config.flask_config.DEBUG is False
+    assert config.flask_config.CSRF_ENABLED is True
+
+
+def test_development_profile_preserves_csrf(monkeypatch):
+    monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+    monkeypatch.setenv('APP_ENV', 'development')
+    monkeypatch.delenv('FLASK_COOKIE_SECURE', raising=False)
+    config = runpy.run_path(str(SRC / 'utils/app_config.py'))['AppConfig']
+    assert config.flask_config.DEBUG is True
+    assert config.session_cookie_secure is False
+    assert config.flask_config.CSRF_ENABLED is True
+
+
+def test_unknown_profile_rejected(monkeypatch):
+    monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+    monkeypatch.setenv('APP_ENV', 'prodution')
+    with pytest.raises(ValueError, match='APP_ENV'):
+        runpy.run_path(str(SRC / 'utils/app_config.py'))
 
 
 @pytest.mark.parametrize("secure", [True, False])

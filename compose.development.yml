@@ -1,0 +1,51 @@
+name: vacations-development
+
+services:
+  vacations-redis:
+    container_name: vacations-development-redis
+
+  vacations-database:
+    container_name: vacations-development-database
+
+  vacations-statistics:
+    container_name: vacations-development-statistics
+    image: vacations-statistics:development
+    working_dir: /workspace
+    entrypoint: [python, manage.py, runserver, "0.0.0.0:8000"]
+    environment:
+      DJANGO_SETTINGS_MODULE: api.settings.development
+      DJANGO_DEBUG: "true"
+      DJANGO_COOKIE_SECURE: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./Django/src:/workspace
+    ports:
+      - 127.0.0.1:8000:8000
+
+  vacations-catalog:
+    container_name: vacations-development-catalog
+    image: vacations-catalog:development
+    working_dir: /workspace
+    entrypoint: [flask, --app, app, run, --debug, --host=0.0.0.0, --port=5000]
+    environment:
+      APP_ENV: development
+      FLASK_COOKIE_SECURE: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./Flask/src:/workspace
+      - vacation-images:/workspace/static/images/vacations
+
+  vacations-statistics-frontend:
+    container_name: vacations-development-statistics-frontend
+    image: vacations-statistics-frontend:development
+    build:
+      context: ./React
+      dockerfile: Dockerfile.development
+    environment:
+      API_PROXY_TARGET: http://vacations-statistics:8000
+    volumes:
+      - ./React:/app
+      - frontend-node-modules:/app/node_modules
+
+volumes:
+  frontend-node-modules:

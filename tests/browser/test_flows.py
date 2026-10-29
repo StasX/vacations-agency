@@ -99,7 +99,8 @@ def test_administrator_add_and_update_vacation(page, seeded_database):
 def test_administrator_login_statistics_reload_and_logout(page, seeded_database):
     page.goto('http://dashboard:3000/login')
     page.get_by_label('Email Address').fill('admin@browser.com')
-    page.get_by_label('Password', exact=True).fill('Password123!')
+    # MUI includes its required-field asterisk in the label text.
+    page.get_by_label(re.compile(r'^Password\s*\*?$')).fill('Password123!')
     with page.expect_response('**/api/auth/login') as login:
         page.get_by_role('button', name='Sign In', exact=True).click()
     assert login.value.status == 200

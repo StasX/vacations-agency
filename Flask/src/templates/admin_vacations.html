@@ -8,7 +8,7 @@
             <div class="row w-100">
                 <div class="col-md-2 col-sm-2 coll-xs-3">
                     <a class="btn btn-md btn-outline-dark btn-add" href="{{ url_for('vacations_view.insert') }}"><i
-                            class="fa-solid fa-plus"></i> Add Vacation</a>
+                            class="fa-solid fa-plus" aria-hidden="true"></i> Add Vacation</a>
                 </div>
                 <div class="col-md-2 col-sm-2 coll-xs-3 offset-md-8 offset-sm-8 offset-xs-6">
                     {% set user = session.get("current_user") %}
@@ -31,7 +31,7 @@
             <div class="col-sm-12 col-md-6 col-lg-4 col-xl-4">
                 <div class="card" style="width: 26rem;">
                     <a href="{{ url_for('vacations_view.edit', id=vacation.id ) }}"
-                        class="btn btn-sm btn-light edit-btn"><i class="fa-solid fa-pen"></i>Edit</a>
+                        class="btn btn-sm btn-light edit-btn"><i class="fa-solid fa-pen" aria-hidden="true"></i>Edit</a>
                     <form method="post" action="{{ url_for('vacations_view.delete', id=vacation.id) }}"
                         onsubmit="event.preventDefault(); deleteVacation(this)">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

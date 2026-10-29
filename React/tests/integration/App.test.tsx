@@ -53,6 +53,13 @@ function fillLogin(password = 'secret') {
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 }
 
+test('required password field is discoverable by the browser test label', () => {
+    at(<Login />);
+    const password = screen.getByLabelText(/^Password\s*\*?$/);
+    expect(password).toHaveAttribute('type', 'password');
+    expect(password).toBeRequired();
+});
+
 test('login submits credentials and navigates on success', async () => {
     jest.mocked(userService.login).mockResolvedValue(undefined);
     at(<Routes><Route path="/login" element={<Login />} /><Route path="/home" element={<p>Welcome home</p>} /></Routes>, '/login');

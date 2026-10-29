@@ -49,12 +49,14 @@ def test_regular_users_cannot_manage_vacations(client, app, sign_in, path, metho
 def test_vacation_list_formats_dates_and_uses_current_user(client, app, sign_in, role):
     sign_in(role)
     app.test_dal.get_table.return_value = [dict(
-        id=1, name="Italy", description="Rome holiday", start_date=date(2099, 1, 1),
+        id=1, country="Italy", description="Rome holiday", start_date=date(2099, 1, 1),
         end_date=date(2099, 1, 2), price=100, image=None, likes_count=3, liked=1,
     )]
     response = client.get("/vacations")
     assert response.status_code == 200
     assert b"Rome holiday" in response.data
+    assert b'<span class="card-city">Italy</span>' in response.data
+    assert b'alt="Italy"' in response.data
     assert b"01/01/2099" in response.data
     assert app.test_dal.get_table.call_args.args[1] == (7,)
     assert (b"delete-btn" in response.data) == (role == 1)

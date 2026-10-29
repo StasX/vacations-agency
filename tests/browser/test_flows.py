@@ -15,6 +15,7 @@ def test_customer_register_login_like_and_logout(page, seeded_database):
     page.get_by_role('button', name='Register', exact=True).click()
     expect(page).to_have_url('http://catalog:5000/vacations')
     card = page.locator('.card').filter(has_text='Browser test holiday')
+    expect(card.locator('.card-city')).to_have_text('Greece')
     expect(card.locator('.counter')).to_have_text('1')
     card.get_by_role('button', name=re.compile('Likes')).click()
     expect(card.locator('.counter')).to_have_text('2')

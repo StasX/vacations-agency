@@ -80,7 +80,7 @@ def test_admin_delete_form_submits_with_csrf(client, app, sign_in, image_directo
 def test_user_like_form_requires_post_and_csrf(client, app, sign_in, liked):
     sign_in()
     app.test_dal.get_table.return_value = [dict(
-        id=12, name="Italy", description="Holiday", image=None, price=100,
+        id=12, country="Italy", description="Holiday", image=None, price=100,
         start_date=date(2099, 1, 1), end_date=date(2099, 1, 2), likes_count=liked, liked=liked,
     )]
     app.test_dal.get_scalar.return_value = {"cnt": liked}

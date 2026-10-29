@@ -11,7 +11,7 @@ class VacationsLogic:
     def get_all_vacations(self, user_id):
         sql = """SELECT 
                     vacations.id AS id,
-                    countries.name,
+                    countries.name AS country,
                     vacations.description,
                     vacations.start_date,
                     vacations.end_date,

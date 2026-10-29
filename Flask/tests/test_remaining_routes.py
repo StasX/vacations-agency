@@ -42,7 +42,7 @@ def test_empty_vacation_list(client, app, sign_in, role):
 def test_vacation_description_is_html_escaped(client, app, sign_in, role):
     sign_in(role)
     app.test_dal.get_table.return_value = [dict(
-        id=1, name="Italy", description='<script>alert("xss")</script>', image=None,
+        id=1, country="Italy", description='<script>alert("xss")</script>', image=None,
         start_date=date(2099, 1, 1), end_date=date(2099, 1, 2), price=100, likes_count=0, liked=0,
     )]
     response = client.get("/vacations")

@@ -118,6 +118,19 @@ def test_concurrent_like_toggles_are_serialized(admin, trip, sql):
     assert sql.fetchone()[0] == 0
 
 
+@pytest.mark.parametrize('role', [1, 2])
+def test_vacation_country_name_reaches_cards_from_real_mysql(client, admin, trip, sql, role):
+    from utils.auth_status import get_status
+    sql.execute('UPDATE users SET role_id=%s WHERE id=%s', (role, admin))
+    with client.session_transaction() as session:
+        session['current_user'] = {'id': admin, 'role': role, 'first_name': 'Test', 'last_name': 'User'}
+        session['auth_status'] = get_status(admin)
+    response = client.get('/vacations')
+    assert response.status_code == 200
+    assert b'<span class="card-city">Greece</span>' in response.data
+    assert b'alt="Greece"' in response.data
+
+
 def test_authenticated_request_closes_real_mysql_connection(client, admin):
     with client.session_transaction() as session:
         session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}

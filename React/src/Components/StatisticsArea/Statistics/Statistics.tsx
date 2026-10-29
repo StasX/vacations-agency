@@ -35,7 +35,7 @@ export function Statistics(): JSX.Element {
     return (
         <Grid container spacing={2} sx={{ textAlign: "center" }}>
             <Grid item md={6} xs={12}>
-                <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
+                <Card variant="outlined" sx={{ width: "100%", maxWidth: 600, boxSizing: "border-box", margin: "5px auto", minHeight: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ mb: 5 }}>Members count:</Typography>
                         <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{members?.total_users ?? 0}</Typography>
@@ -43,7 +43,7 @@ export function Statistics(): JSX.Element {
                 </Card>
             </Grid>
             <Grid item md={6} xs={12}>
-                <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
+                <Card variant="outlined" sx={{ width: "100%", maxWidth: 600, boxSizing: "border-box", margin: "5px auto", minHeight: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ mb: 5 }}>Likes count:</Typography>
                         <Typography sx={{ fontWeight: 700, fontSize: "16pt" }}>{likes?.total_likes ?? 0}</Typography>
@@ -51,7 +51,7 @@ export function Statistics(): JSX.Element {
                 </Card>
             </Grid>
             <Grid item md={6} xs={12}>
-                <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
+                <Card variant="outlined" sx={{ width: "100%", maxWidth: 600, boxSizing: "border-box", margin: "5px auto", minHeight: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ textAlign: "center" }}>Vacations statistics:</Typography>
                         <PieChart
@@ -64,14 +64,14 @@ export function Statistics(): JSX.Element {
                                     ],
                                 },
                             ]}
-                            width={600}
                             height={200}
+                            slotProps={{ legend: { direction: "vertical", position: { vertical: "bottom", horizontal: "center" } } }}
                         />
                     </CardContent>
                 </Card>
             </Grid>
             <Grid item md={6} xs={12}>
-                <Card variant="outlined" sx={{ width: 600, margin: "5px auto", height: 300, mt: 2, }}>
+                <Card variant="outlined" sx={{ width: "100%", maxWidth: 600, boxSizing: "border-box", margin: "5px auto", minHeight: 300, mt: 2, }}>
                     <CardContent>
                         <Typography variant="h5" sx={{ textAlign: "center" }}>Likes statistics:</Typography>
                         <PieChart
@@ -80,8 +80,8 @@ export function Statistics(): JSX.Element {
                                     data: likesStatistics,
                                 },
                             ]}
-                            width={600}
                             height={200}
+                            slotProps={{ legend: { direction: "vertical", position: { vertical: "bottom", horizontal: "center" } } }}
                         />
                     </CardContent>
                 </Card>

@@ -1,3 +1,5 @@
+import pytest
+
 from utils.security import Security
 
 
@@ -39,6 +41,24 @@ def test_duplicate_registration_does_not_insert(client, app):
     ))
     assert b"Email already exists." in response.data
     app.test_dal.insert.assert_not_called()
+
+
+@pytest.mark.parametrize("field,value,message", [
+    ("first_name", "x" * 16, b"First name length should be 2-15 characters."),
+    ("last_name", "x" * 16, b"Last name length should be 2-15 characters."),
+    ("email", "a" * 26 + "@b.co", b"Email length must be 6 to 30 characters."),
+    ("password", "x" * 33, b"Password length must be 4 to 32 characters."),
+])
+def test_registration_rejects_overlong_fields_before_database_write(client, app, field, value, message):
+    data = dict(first_name="Test", last_name="User", email="test@example.com", password="Abc123")
+    data[field] = value
+    response = client.post("/register", data=data)
+    assert response.status_code == 200
+    assert message in response.data
+    app.test_dal.get_scalar.assert_not_called()
+    app.test_dal.insert.assert_not_called()
+    with client.session_transaction() as session:
+        assert "current_user" not in session
 
 
 def test_registration_forces_user_role_and_hashes_password(client, app):

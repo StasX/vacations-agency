@@ -30,10 +30,13 @@ def test_credentials_length_boundaries(email, password):
                                                   None, "Missing last name."),
     ("email", None, "Missing email."), ("password", None, "Missing password."),
     ("role", None, "Missing role."),
-    ("first_name", "x", "First name length should be 2-32 characters."),
-    ("first_name", "x" * 33, "First name length should be 2-32 characters."),
-    ("last_name", "x", "Last name length should be 2-32 characters."),
-    ("last_name", "x" * 33, "Last name length should be 2-32 characters."),
+    ("first_name", "x", "First name length should be 2-15 characters."),
+    ("first_name", "x" * 16, "First name length should be 2-15 characters."),
+    ("last_name", "x", "Last name length should be 2-15 characters."),
+    ("last_name", "x" * 16, "Last name length should be 2-15 characters."),
+    ("email", "a@b.c", "Email length must be 6 to 30 characters."),
+    ("email", "a" * 26 + "@b.co", "Email length must be 6 to 30 characters."),
+    ("password", "a" * 33, "Password length must be 4 to 32 characters."),
     ("email", "bad-email", "Entered invalid email."),
     ("password", "abc", "Entered too short password."), ("role",
                                                          1, "This role unacceptable"),
@@ -45,11 +48,19 @@ def test_user_validation_messages(field, value, message):
     assert UserModel(**values).validate_insert() == message
 
 
-@pytest.mark.parametrize("length", [2, 32])
+@pytest.mark.parametrize("length", [2, 15])
 def test_valid_user_name_boundaries(length):
     user = UserModel(None, "x" * length, "x" * length,
                      "test@example.com", "abcd", 2)
     assert user.validate_insert() is None
+
+
+@pytest.mark.parametrize("email", ["a@b.co", "a" * 25 + "@b.co"])
+@pytest.mark.parametrize("password", ["abcd", "a" * 32])
+def test_registration_boundary_credentials_can_pass_login_validation(email, password):
+    user = UserModel(None, "Test", "User", email, password, 2)
+    assert user.validate_insert() is None
+    assert CredentialsModel(email, password).validate() is None
 
 
 @pytest.fixture

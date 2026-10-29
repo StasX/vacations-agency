@@ -100,6 +100,23 @@ docker compose --env-file .env.production run --rm database-migrations --apply
 
 See [shared schema ownership and migrations](database-ownership.md) for recovery.
 
+## Login rate limiting
+
+Both backends enforce shared Redis login budgets: 10 attempts per normalized
+email address and 100 attempts per connecting IP address within 15 minutes.
+Successful and failed attempts count. Flask's `/` and `/login` POST routes and
+Django's `/api/auth/login` use the same budgets. Email addresses and IPs are
+SHA-256 digests in Redis keys; passwords are never stored by the limiter.
+Blocked attempts return HTTP 429 with `Retry-After` in seconds and do not extend
+the window. Redis failures return HTTP 503 rather than bypassing the limit.
+
+The IP budget uses the socket peer and ignores forwarded headers to prevent
+spoofing. Requests through the same reverse proxy share its IP budget; account
+budgets still distinguish accounts. Size any edge proxy limits for your traffic.
+Rebuild and recreate Redis as well as both backends when deploying this change:
+the Redis ACL now permits the login key namespace and the TTL command. No MySQL
+schema or account-data changes are required.
+
 ## Running backends outside Docker
 
 Export the development template's values into the process environment, including

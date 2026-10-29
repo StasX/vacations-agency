@@ -30,7 +30,9 @@ the existing MySQL composite primary key `(user_id, vacation_id)`.
 Password tests cover randomized hashing,
 legacy hash upgrades, rejected passwords, and malformed hashes.
 Cross-application password compatibility is checked separately in
-[`tests/passwords`](../../tests/passwords/README.md); this suite imports no Flask application code.
+[`tests/passwords`](../../tests/passwords/README.md). Login limiter tests execute
+both backends' standalone limiter utilities against fakeredis to verify matching
+budgets, concurrency, and expiry; they do not import the Flask application.
 Use pytest from this directory; `manage.py test` does not collect this suite.
 
 Auth tests include enforced CSRF,

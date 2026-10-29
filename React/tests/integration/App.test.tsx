@@ -77,6 +77,7 @@ test('short passwords prevent submission', async () => {
 
 test.each([
     [{ response: { status: 400 } }, "You can't login with this credentials."],
+    [{ response: { status: 429 } }, 'Too many login attempts. Please try again later.'],
     [new Error('offline'), 'Unable to reach the server. Please check your connection.'],
     [{ response: { status: 500 } }, 'Something went wrong. Please try again.'],
 ])('login displays a useful error for %p', async (error, message) => {

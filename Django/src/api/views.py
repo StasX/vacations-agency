@@ -13,7 +13,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 
 from users.models import UserModel
-from utils import refresh_tokens, auth_status
+from utils import refresh_tokens, auth_status, login_limiter
 from utils.tokens import issue_tokens, password_fingerprint
 from utils.errors import server_error
 from utils.tokens import decode_token
@@ -82,10 +82,17 @@ def login(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     try:
+        # Consume the IP budget even for malformed request bodies.
         try:
             data = json.loads(request.body)
         except (ValueError, UnicodeError):
-            return JsonResponse({'error': 'Invalid credentials'}, status=400)
+            data = None
+        email = data.get('email') if isinstance(data, dict) else None
+        retry = login_limiter.retry_after(request.META.get('REMOTE_ADDR'), email)
+        if retry:
+            response = JsonResponse({'error': 'Too many login attempts. Please try again later.'}, status=429)
+            response['Retry-After'] = str(retry)
+            return response
         if not isinstance(data, dict):
             return JsonResponse({'error': 'Invalid credentials'}, status=400)
         email, password = data.get('email'), data.get('password')

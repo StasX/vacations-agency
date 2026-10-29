@@ -8,6 +8,7 @@ import pytest
 def no_redis(monkeypatch):
     store = MagicMock()
     store.get.return_value = 'enabled:00000000-0000-4000-8000-000000000007'
+    store.eval.return_value = 0
     monkeypatch.setattr('utils.auth_status.get_redis', lambda: store)
     return store
 

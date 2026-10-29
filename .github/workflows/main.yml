@@ -59,6 +59,11 @@ jobs:
           mkdir -p reports
           python -m pytest -q --junitxml=reports/pytest.xml 2>&1 | tee reports/pytest.log
 
+      - name: Check cross-application password compatibility
+        if: matrix.application == 'Flask'
+        working-directory: .
+        run: python -m pytest -c tests/passwords/pytest.ini tests/passwords -q
+
       - name: Upload backend test results
         if: always()
         uses: actions/upload-artifact@v7

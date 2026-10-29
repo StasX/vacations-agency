@@ -269,6 +269,10 @@ failures for documented defects. See [Flask tests](Flask/tests/README.md),
 [Django tests](Django/tests/README.md), and [React tests](React/tests/README.md)
 for setup, coverage, and limitations.
 
+Each backend's test suite uses only its own application code. The separate
+[password compatibility suite](tests/passwords/README.md) checks that password
+hashes work across both applications, running each backend in its own process.
+
 The GitHub Actions workflow runs backend tests, frontend checks, and Trivy and
 Bandit security scans.
 

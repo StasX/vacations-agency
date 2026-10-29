@@ -1,7 +1,4 @@
 from hashlib import sha512
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
-
 import pytest
 from utils.app_config import AppConfig
 from utils.security import Security
@@ -11,17 +8,6 @@ from utils.security import Security
                                      "pbkdf2_sha256$0$salt$hash", "pbkdf2_sha256$999999999$salt$hash"])
 def test_invalid_hashes_are_rejected(stored):
     assert not Security.verify("password", stored)
-
-
-def test_both_backends_share_password_format():
-    root = Path(__file__).resolve().parents[2]
-    other = "Django" if "Flask" in str(Path(__file__).parent.parent) else "Flask"
-    spec = spec_from_file_location("utils.other_security", root / other / "src/utils/security.py")
-    module = module_from_spec(spec)
-    spec.loader.exec_module(module)
-    password = "Password123!"
-    assert module.Security.verify(password, Security.hash(password))
-    assert Security.verify(password, module.Security.hash(password))
 
 
 @pytest.mark.parametrize("password,allowed", [("Abc123", True), ("Wrong123", False)])

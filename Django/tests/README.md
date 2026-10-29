@@ -27,8 +27,10 @@ Like tests cover multiple vacations per user, duplicate-pair rejection, deletion
 of individual likes, and statistics aggregation. The unmanaged likes model maps
 the existing MySQL composite primary key `(user_id, vacation_id)`.
 
-Password tests cover randomized hashing, shared Flask/Django compatibility,
+Password tests cover randomized hashing,
 legacy hash upgrades, rejected passwords, and malformed hashes.
+Cross-application password compatibility is checked separately in
+[`tests/passwords`](../../tests/passwords/README.md); this suite imports no Flask application code.
 Use pytest from this directory; `manage.py test` does not collect this suite.
 
 Auth tests include enforced CSRF,

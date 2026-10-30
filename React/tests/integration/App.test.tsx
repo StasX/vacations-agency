@@ -111,6 +111,16 @@ test('unauthorized statistics visits never start protected requests', () => {
     Object.values(statisticsService).forEach(method => expect(method).not.toHaveBeenCalled());
 });
 
+test('admin statistics route loads its dashboard on demand', async () => {
+    jest.useRealTimers();
+    store.dispatch(userActions.login(admin));
+    at(<Routing />, '/statistics');
+    expect(screen.getByRole('status')).toHaveTextContent('Loading statistics');
+    expect(await screen.findByText('Members count:')).toBeInTheDocument();
+    expect(screen.getAllByTestId('chart')).toHaveLength(2);
+    Object.values(statisticsService).forEach(method => expect(method).toHaveBeenCalledTimes(1));
+});
+
 test('losing admin access redirects an already mounted protected route', () => {
     store.dispatch(userActions.login(admin));
     at(<Routing />, '/home');

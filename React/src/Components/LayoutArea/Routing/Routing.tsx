@@ -1,11 +1,13 @@
-import type { JSX } from 'react';
+import { lazy, Suspense, type JSX } from 'react';
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { useCurrentUser } from "../../../Hooks/useCurrentUser";
 import { Login } from "../../LoginArea/login/login";
 import { Home } from "../../HomeArea/Home/Home";
-import { Statistics } from "../../StatisticsArea/Statistics/Statistics";
 import { About } from "../../AboutArea/About/About";
 import { PageNotFound } from "../PageNotFound/PageNotFound";
+
+const Statistics = lazy(() => import("../../StatisticsArea/Statistics/Statistics")
+    .then(module => ({ default: module.Statistics })));
 
 function RequireAdmin(): JSX.Element {
     const user = useCurrentUser();
@@ -24,7 +26,11 @@ export function Routing(): JSX.Element {
             <Route element={<RequireAdmin />}>
                 <Route index element={<Navigate to="/home" replace />} />
                 <Route path="/home" element={<Home />} />
-                <Route path="/statistics" element={<Statistics />} />
+                <Route path="/statistics" element={
+                    <Suspense fallback={<p role="status">Loading statistics…</p>}>
+                        <Statistics />
+                    </Suspense>
+                } />
                 <Route path="/about" element={<About />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />

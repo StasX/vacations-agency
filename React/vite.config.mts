@@ -10,6 +10,18 @@ export default defineConfig({
             '/api/': { target: process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000', changeOrigin: false },
         },
     },
-    build: { outDir: 'build' },
+    build: {
+        outDir: 'build',
+        rolldownOptions: {
+            output: {
+                codeSplitting: {
+                    groups: [
+                        // Cache the shared React runtime separately from application code.
+                        { name: 'react-runtime', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+                    ],
+                },
+            },
+        },
+    },
 });
 

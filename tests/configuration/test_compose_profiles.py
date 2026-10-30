@@ -50,6 +50,11 @@ def test_base_is_production_even_with_development_environment_file():
         assert all(port['host_ip'] == '127.0.0.1' for port in service.get('ports', []))
         assert service.get('entrypoint') is None
     assert frontend['build']['dockerfile'] == 'Dockerfile'
+    initializer = services['account-initialization']
+    assert initializer['entrypoint'] == ['python', 'manage.py', 'initialize_account_status']
+    assert initializer['environment'] == django['environment']
+    for backend in (django, flask):
+        assert backend['depends_on']['account-initialization']['condition'] == 'service_completed_successfully'
     for name in ('vacations-redis', 'vacations-database', 'vacations-statistics',
                  'vacations-catalog', 'vacations-statistics-frontend'):
         assert services[name]['container_name'] == name

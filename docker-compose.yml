@@ -63,13 +63,15 @@ services:
   vacations-statistics:
     container_name: vacations-statistics
     depends_on:
+      account-initialization:
+        condition: service_completed_successfully
       vacations-redis:
         condition: service_healthy
       vacations-database:
         condition: service_healthy
     image: sm1986/vacations-statistics:1.0
     build: ./Django
-    environment:
+    environment: &statistics-environment
       DJANGO_SETTINGS_MODULE: api.settings.production
       DJANGO_DEBUG: "false"
       PYTHON_DOTENV_DISABLED: "1"
@@ -95,10 +97,30 @@ services:
   
   # ------------------------------------------------------------------------------------------
 
+  # Provision seeded and pre-existing accounts before either backend accepts traffic.
+  account-initialization:
+    image: sm1986/vacations-statistics:1.0
+    build: ./Django
+    environment: *statistics-environment
+    entrypoint: [python, manage.py, initialize_account_status]
+    healthcheck:
+      disable: true
+    depends_on:
+      vacations-redis:
+        condition: service_healthy
+      vacations-database:
+        condition: service_healthy
+    networks:
+      - default
+      - redis-backend
+    restart: "no"
+
   # Flask service: 
   vacations-catalog:
     container_name: vacations-catalog
     depends_on:
+      account-initialization:
+        condition: service_completed_successfully
       vacations-redis:
         condition: service_healthy
       vacations-database:

@@ -22,6 +22,15 @@ services:
     ports:
       - 127.0.0.1:8000:8000
 
+  account-initialization:
+    image: vacations-statistics:development
+    working_dir: /workspace
+    environment:
+      DJANGO_SETTINGS_MODULE: api.settings.development
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./Django/src:/workspace
+
   vacations-catalog:
     container_name: vacations-development-catalog
     image: vacations-catalog:development

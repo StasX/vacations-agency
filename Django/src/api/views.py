@@ -100,6 +100,9 @@ def login(request):
             return JsonResponse({'error': 'Invalid credentials'}, status=400)
         user = authenticate(request, username=email, password=password)
         if not user:
+            if getattr(request, 'account_unavailable', False):
+                return JsonResponse({'error': 'Account access is unavailable. Contact your administrator.',
+                                     'code': 'account_unavailable'}, status=403)
             return JsonResponse({'error': 'Wrong credentials'}, status=400)
         if user.role.role_type != 'Admin':
             return JsonResponse({'error': 'Forbidden'}, status=403)

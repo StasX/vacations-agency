@@ -23,6 +23,25 @@ def test_missing_or_malformed_status_is_not_enabled(status):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize('stored_status', [None, 'enabled:invalid', 'disabled:review-required'])
+def test_login_explains_unavailable_account_without_changing_status(client, user, redis_store, stored_status):
+    key = auth_status.status_key(user.pk)
+    redis_store.delete(key)
+    if stored_status is not None:
+        redis_store.set(key, stored_status)
+    response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
+                           content_type='application/json')
+    assert response.status_code == 403
+    assert response.json()['code'] == 'account_unavailable'
+    assert 'refresh' not in response.cookies
+    assert redis_store.get(key) == stored_status
+    response = client.post('/api/auth/login', {'email': user.email, 'password': 'incorrect'},
+                           content_type='application/json')
+    assert response.status_code == 400
+    assert response.json() == {'error': 'Wrong credentials'}
+
+
+@pytest.mark.django_db
 @pytest.mark.parametrize('operation', ['access', 'refresh', 'login'])
 def test_deleted_disabled_status_never_reactivates_account(client, user, redis_store, operation):
     from utils.tokens import issue_tokens
@@ -39,7 +58,7 @@ def test_deleted_disabled_status_never_reactivates_account(client, user, redis_s
     else:
         response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
                                content_type='application/json')
-    assert response.status_code == (400 if operation == 'login' else 401)
+    assert response.status_code == (403 if operation == 'login' else 401)
     assert redis_store.get(auth_status.status_key(user.pk)) is None
 
 

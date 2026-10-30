@@ -213,11 +213,20 @@ persistent Redis volume. From a Django shell, disable an account with
 `from utils.auth_status import set_enabled; set_enabled(7, False)` and enable it
 with `set_enabled(7, True)`. Each status change invalidates earlier dashboard
 tokens and Flask sessions, including after re-enabling. Missing or malformed status keys deny authentication; login never creates or
-repairs them. Before deploying, explicitly enable only reviewed existing
-accounts with `set_enabled(user_id, True)`. New Flask registrations initialize
+repairs them. Compose runs `account-initialization` before starting either
+backend. It enables every existing MySQL user whose Redis status is missing,
+so seeded accounts can sign in on a fresh deployment. Existing statuses,
+including disabled accounts, are never overwritten. The command can also run
+manually as `python manage.py initialize_account_status` from Django's source
+directory with the deployment environment configured. New Flask registrations initialize
 status atomically with `SET NX`, preserving any existing disabled status.
-If Redis data is lost, recover status from a trusted backup or explicitly
-review and enable accounts; do not bulk-enable them automatically. Redis outages block authenticated
+Dashboard login returns HTTP 403 with code `account_unavailable` when the
+password is correct but the account status is missing, malformed, or disabled.
+The login page asks the user to contact an administrator. Incorrect credentials
+and malformed login requests continue to return HTTP 400.
+If Redis data is lost, restore its backup before deploying to preserve disabled
+accounts. Otherwise deployment initialization enables users with missing status;
+login alone never recreates status. Redis outages block authenticated
 requests. Dashboard requests also recheck MySQL for deletion, role changes, and
 password changes. Previously issued tokens without the status claim require a
 new login. Flask protected requests also recheck MySQL for account deletion,

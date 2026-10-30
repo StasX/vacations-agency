@@ -107,7 +107,8 @@ def test_disabled_account_cannot_login(client, user):
     auth_status.set_enabled(user.pk, False)
     response = client.post('/api/auth/login', {'email': user.email, 'password': 'Password123!'},
                            content_type='application/json')
-    assert response.status_code == 400
+    assert response.status_code == 403
+    assert response.json()['code'] == 'account_unavailable'
     assert 'refresh' not in response.cookies
 
 

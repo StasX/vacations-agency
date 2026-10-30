@@ -27,6 +27,8 @@ export function Login(): JSX.Element {
             let text = "Something went wrong. Please try again.";
             if (err?.response?.status === 400) {
                 text = "You can't login with this credentials.";
+            } else if (err?.response?.status === 403) {
+                text = "Account access is unavailable. Contact your administrator.";
             } else if (err?.response?.status === 429) {
                 text = "Too many login attempts. Please try again later.";
             } else if (!err?.response) {

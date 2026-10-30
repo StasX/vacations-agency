@@ -217,8 +217,10 @@ repairs them. Compose runs `account-initialization` before starting either
 backend. It enables every existing MySQL user whose Redis status is missing,
 so seeded accounts can sign in on a fresh deployment. Existing statuses,
 including disabled accounts, are never overwritten. The command can also run
-manually as `python manage.py initialize_account_status` from Django's source
-directory with the deployment environment configured. New Flask registrations initialize
+manually as `docker compose run --rm account-initialization` with the selected
+deployment environment. Its standalone script and container live in
+`scripts/account-status/` and have no Flask or Django dependency.
+New Flask registrations initialize
 status atomically with `SET NX`, preserving any existing disabled status.
 Dashboard login returns HTTP 403 with code `account_unavailable` when the
 password is correct but the account status is missing, malformed, or disabled.

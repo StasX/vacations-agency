@@ -51,8 +51,12 @@ def test_base_is_production_even_with_development_environment_file():
         assert service.get('entrypoint') is None
     assert frontend['build']['dockerfile'] == 'Dockerfile'
     initializer = services['account-initialization']
-    assert initializer['entrypoint'] == ['python', 'manage.py', 'initialize_account_status']
-    assert initializer['environment'] == django['environment']
+    assert Path(initializer['build']['context']) == ROOT / 'scripts' / 'account-status'
+    assert 'DJANGO_SETTINGS_MODULE' not in initializer['environment']
+    assert 'SECRET_KEY' not in initializer['environment']
+    assert not initializer.get('volumes')
+    assert initializer['depends_on']['vacations-database']['condition'] == 'service_healthy'
+    assert initializer['depends_on']['vacations-redis']['condition'] == 'service_healthy'
     for backend in (django, flask):
         assert backend['depends_on']['account-initialization']['condition'] == 'service_completed_successfully'
     for name in ('vacations-redis', 'vacations-database', 'vacations-statistics',

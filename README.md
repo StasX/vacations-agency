@@ -287,10 +287,17 @@ hashes work across both applications, running each backend in its own process.
 The GitHub Actions workflow runs backend tests, frontend checks, and Trivy and
 Bandit security scans.
 
-## Possible Improvements
+## Production Hardening
 
-- Restrict public exposure of internal services.
-- Harden Django debug, allowed-host, and CORS settings for production.
+- Production Compose publishes Flask and the statistics frontend only on host
+  loopback for an HTTPS reverse proxy. MySQL, Redis, and Django have no published
+  host ports.
+- Django production settings disable debug mode and enforce secure cookies.
+  Allowed hosts and CORS origins use explicit environment configuration;
+  unrestricted CORS is disabled.
+
+See [configuration and deployment](docs/configuration.md) for domain, origin,
+and HTTPS reverse proxy setup.
 
 ## License
 

@@ -78,7 +78,7 @@ def test_refresh_rejects_invalid_cookie(client, token_factory, kind):
     elif kind == 'wrong-audience':
         client.cookies['refresh'] = token_factory(type='refresh', aud='other')
     elif kind == 'wrong-key':
-        client.cookies['refresh'] = jwt.encode(decode(token_factory()), 'another-key', algorithm='HS256')
+        client.cookies['refresh'] = jwt.encode(decode(token_factory()), 'another-test-key-at-least-32-bytes', algorithm='HS256')
     response = client.post('/api/auth/refresh-token')
     assert response.status_code == 401
     assert response.json() == {'error': 'Unauthorized'}

@@ -4,7 +4,8 @@ from unittest.mock import patch
 with patch('dotenv.load_dotenv'):
     from utils.app_config import AppConfig
 
-AppConfig.secret_key = 'django-tests-only-secret-key-at-least-32-bytes'
+# Also supports signing HS512 tokens used to test rejected algorithms.
+AppConfig.secret_key = 'django-tests-only-secret-key-at-least-64-bytes-for-hs512-validation'
 AppConfig.passwords_salt = 'test-only-salt'
 AppConfig.issuer = 'test-issuer'
 AppConfig.audience = 'test-audience'

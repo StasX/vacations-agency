@@ -166,7 +166,7 @@ test('login page hides authenticated navigation', () => {
 test('header displays the user and supports navigation', () => {
     jest.useFakeTimers();
     store.dispatch(userActions.login(admin));
-    at(<><Header /><Routes><Route path="/statistics" element={<p>Dashboard destination</p>} /></Routes></>);
+    at(<><Header /><Routes><Route path="/" element={<p>Home destination</p>} /><Route path="/statistics" element={<p>Dashboard destination</p>} /></Routes></>);
     act(() => jest.advanceTimersByTime(1500));
     expect(screen.getByText('Ada Lovelace')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Statistics' }));
@@ -175,7 +175,7 @@ test('header displays the user and supports navigation', () => {
 
 test('header logs out and navigates to login', async () => {
     jest.mocked(userService.logout).mockResolvedValue(undefined);
-    at(<><Header /><Routes><Route path="/login" element={<p>Login destination</p>} /></Routes></>, '/home');
+    at(<><Header /><Routes><Route path="/home" element={<p>Home destination</p>} /><Route path="/login" element={<p>Login destination</p>} /></Routes></>, '/home');
     fireEvent.click(screen.getByText('Logout'));
     expect(await screen.findByText('Login destination')).toBeInTheDocument();
     expect(userService.logout).toHaveBeenCalledTimes(1);

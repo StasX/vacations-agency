@@ -39,7 +39,7 @@ def test_invalid_access_denied(client, token_factory, kind):
         'malformed': 'broken', 'refresh': token_factory(type='refresh'),
         'expired': token_factory(exp=datetime.now(timezone.utc)-timedelta(seconds=1)),
         'wrong-audience': token_factory(aud='other'),
-        'wrong-key': jwt.encode({'type': 'access'}, 'wrong-key', algorithm='HS256'),
+        'wrong-key': jwt.encode({'type': 'access'}, 'wrong-test-key-at-least-32-bytes-long', algorithm='HS256'),
     }
     assert client.get('/api/users/total', HTTP_AUTHORIZATION=tokens[kind]).status_code == 401
 

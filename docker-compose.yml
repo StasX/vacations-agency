@@ -1,4 +1,35 @@
+x-image-storage: &image-storage
+  MINIO_ENDPOINT: vacations-minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the selected environment file}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in the selected environment file}
+  MINIO_BUCKET: vacation-images
+  MINIO_SECURE: "false"
+
 services:
+
+  vacations-minio:
+    build: ./MinIO
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the selected environment file}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in the selected environment file}
+    volumes:
+      - minio-data:/data
+    networks:
+      - image-backend
+    restart: unless-stopped
+
+  image-initialization:
+    build: ./Flask
+    entrypoint: [python, -m, utils.minio_images]
+    environment: *image-storage
+    depends_on:
+      vacations-minio:
+        condition: service_healthy
+    volumes:
+      - vacation-images:/legacy-vacation-images:ro
+    networks:
+      - image-backend
+    restart: "no"
 
   vacations-redis:
     container_name: vacations-redis
@@ -122,6 +153,10 @@ services:
   vacations-catalog:
     container_name: vacations-catalog
     depends_on:
+      image-initialization:
+        condition: service_completed_successfully
+      vacations-minio:
+        condition: service_healthy
       account-initialization:
         condition: service_completed_successfully
       vacations-redis:
@@ -130,9 +165,8 @@ services:
         condition: service_healthy
     image: sm1986/vacations-catalog:1.0
     build: ./Flask 
-    volumes:
-      - vacation-images:/app/static/images/vacations
     environment:
+      <<: *image-storage
       APP_ENV: production
       PYTHON_DOTENV_DISABLED: "1"
       MYSQL_HOST: vacations-database
@@ -150,6 +184,7 @@ services:
     networks:
       - default
       - redis-backend
+      - image-backend
 
   # ------------------------------------------------------------------------------------------
 
@@ -171,7 +206,10 @@ volumes:
   redis-volume:
   vacations-volume:
   vacation-images:
+  minio-data:
 
 networks:
   redis-backend:
+    internal: true
+  image-backend:
     internal: true

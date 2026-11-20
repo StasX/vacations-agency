@@ -32,7 +32,7 @@ a management flow for their definitions. Django is not entirely read-only:
 successful authentication may update `users.password` to the shared password format.
 Both backends must remain compatible with that format.
 
-Vacation image files belong to Flask and its `vacation-images` volume. MySQL stores
+Flask manages vacation images in the `vacation-images` MinIO bucket. MySQL stores
 their filenames. Redis stores shared account-status versions and Django refresh
 token records; these are not MySQL tables or Django migrations. See the repository
 README's password-storage section for account-status provisioning and recovery.

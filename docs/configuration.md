@@ -28,7 +28,7 @@ docker compose --env-file .env.development -f docker-compose.yml -f compose.deve
 ```
 
 Open Flask at `http://localhost:5000` and React at `http://localhost:3000`.
-Django is available directly at `http://localhost:8000`. MySQL and Redis are
+Django is available directly at `http://localhost:8000`. MySQL, Redis, and MinIO are
 accessible only inside Docker. The development template contains public local-only
 credentials; never use them in production. Application source is bind-mounted
 while Python dependencies remain in the images. React dependencies live in a
@@ -82,7 +82,9 @@ needs HTTPS for browser sessions; use the development profile for local HTTP.
 Moving from an existing deployment: keep its current Compose project name and
 database/image volume names, database credentials, signing secrets, issuer/audience,
 and legacy password salt when copying settings into `.env.production`. Renaming
-the environment file does not migrate or replace stored data. Production retains
+the environment file does not migrate or replace stored data. When upgrading to
+MinIO, stop the existing catalog before starting the updated stack so uploads
+pause during the one-time import. Production retains
 the original explicit container names; development uses a `vacations-development-`
 prefix. The default production project name and volume keys remain unchanged.
 The two profiles use overlapping

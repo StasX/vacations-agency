@@ -59,6 +59,16 @@ def test_base_is_production_even_with_development_environment_file():
     assert initializer['depends_on']['vacations-redis']['condition'] == 'service_healthy'
     for backend in (django, flask):
         assert backend['depends_on']['account-initialization']['condition'] == 'service_completed_successfully'
+    minio = services['vacations-minio']
+    images = services['image-initialization']
+    assert not minio.get('ports')
+    assert config['networks']['image-backend']['internal']
+    assert minio['volumes'][0]['source'] == 'minio-data'
+    assert images['volumes'][0]['source'] == 'vacation-images'
+    assert images['volumes'][0]['read_only']
+    assert images['depends_on']['vacations-minio']['condition'] == 'service_healthy'
+    assert flask['depends_on']['image-initialization']['condition'] == 'service_completed_successfully'
+    assert flask['environment']['MINIO_ENDPOINT'] == 'vacations-minio:9000'
     for name in ('vacations-redis', 'vacations-database', 'vacations-statistics',
                  'vacations-catalog', 'vacations-statistics-frontend'):
         assert services[name]['container_name'] == name
@@ -101,7 +111,7 @@ def test_development_selects_reload_servers_and_isolated_volumes():
     for service, name in expected_names.items():
         assert services[service]['container_name'] == name
         assert name != production['services'][service]['container_name']
-    for key in ('vacations-volume', 'redis-volume', 'vacation-images'):
+    for key in ('vacations-volume', 'redis-volume', 'vacation-images', 'minio-data'):
         assert config['volumes'][key]['name'] != production['volumes'][key]['name']
     for service in (django, flask, frontend):
         assert any(volume['type'] == 'bind' for volume in service['volumes'])

@@ -190,8 +190,20 @@ docker compose --env-file .env.development -f docker-compose.yml -f compose.deve
 ## Image Uploads
 
 Vacation uploads accept JPEG, PNG, and WebP files up to 5 MB and 20 million
-pixels. Flask verifies and re-encodes their contents before saving them. Docker
-Compose persists vacation images in the `vacation-images` named volume.
+pixels. Flask verifies and re-encodes uploads before storing them in the private
+`vacation-images` MinIO bucket. The authenticated Flask image URLs are unchanged.
+
+Set `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` in the environment file used by
+Compose before starting or upgrading the stack. MinIO data persists in the
+`minio-data` named volume. On first startup, Compose imports the bundled images
+and existing images from the old `vacation-images` volume, using their original
+filenames. The import reads the old volume and leaves its contents intact.
+
+For Flask outside Compose, set `MINIO_ENDPOINT` to a host and port,
+`MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, and optionally `MINIO_BUCKET`
+(default `vacation-images`). TLS is enabled unless `MINIO_SECURE=false`.
+Run `python -m utils.minio_images` from `Flask/src` to create and seed the bucket.
+Flask uses local image storage when `MINIO_ENDPOINT` is unset.
 
 ## Shared Database Ownership
 

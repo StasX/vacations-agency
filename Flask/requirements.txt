@@ -9,6 +9,7 @@ iniconfig==2.3.1
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.4
+minio==7.2.20
 mysql-connector-python==26.10.0
 packageurl-python==0.17.6
 packaging==26.3

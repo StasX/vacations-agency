@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, request, session, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, session
 from models.client_errors import ValidationError, AuthError
 from facades.auth_facade import AuthFacade
 from facades.vacations_facade import VacationsFacade
@@ -38,10 +38,7 @@ def get_image(image_name):
         # Block anonymous. (I assume that just logged-in users can see images)
         auth_facade = AuthFacade()
         auth_facade.block_anonymous()
-        # Get image path
-        image_path = ImageHandler.get_image_path(image_name)
-        # Send file to front-end
-        return send_file(image_path)
+        return ImageHandler.send_image(image_name)
     except AuthError:
         return redirect(url_for('auth_view.login'))
 

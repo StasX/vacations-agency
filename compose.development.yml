@@ -33,7 +33,6 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
     volumes:
       - ./Flask/src:/workspace
-      - vacation-images:/workspace/static/images/vacations
 
   vacations-statistics-frontend:
     container_name: vacations-development-statistics-frontend

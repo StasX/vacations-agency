@@ -11,18 +11,19 @@ logger = logging.getLogger(__name__)
 
 def enqueue_image_cleanup(dal, image_name):
     if image_name:
+        # Re-enqueuing a name must preserve any active lease.
         dal.insert(
             "INSERT INTO vacation_image_cleanup (image_name) VALUES (%s) "
-            "ON DUPLICATE KEY UPDATE next_attempt_at = CURRENT_TIMESTAMP",
+            "ON DUPLICATE KEY UPDATE next_attempt_at = next_attempt_at",
             (image_name,),
         )
 
 
 def process_next_image(dal):
-    # Avoid gap locks that could block unrelated enqueues during a storage call.
     with dal.transaction(isolation_level="READ COMMITTED"):
         pending = dal.get_scalar(
-            "SELECT image_name FROM vacation_image_cleanup "
+            "SELECT image_name, CURRENT_TIMESTAMP + INTERVAL 2 MINUTE AS lease_until "
+            "FROM vacation_image_cleanup "
             "WHERE next_attempt_at <= CURRENT_TIMESTAMP "
             "ORDER BY next_attempt_at, image_name LIMIT 1 FOR UPDATE SKIP LOCKED"
         )
@@ -36,20 +37,34 @@ def process_next_image(dal):
             "SELECT id FROM vacations WHERE CAST(image AS BINARY) = CAST(%s AS BINARY) LIMIT 1",
             (image_name,),
         )
-        if referenced is None:
-            try:
-                ImageHandler.delete_image(image_name)
-            except Exception:
-                logger.exception("Failed to remove vacation image %r; retrying", image_name)
-                dal.update(
-                    "UPDATE vacation_image_cleanup "
-                    "SET next_attempt_at = CURRENT_TIMESTAMP + INTERVAL 1 MINUTE WHERE image_name = %s",
-                    (image_name,),
-                )
-                return True
+        if referenced is not None:
+            dal.delete("DELETE FROM vacation_image_cleanup WHERE image_name = %s", (image_name,))
+            return True
 
-        dal.delete("DELETE FROM vacation_image_cleanup WHERE image_name = %s", (image_name,))
-        return True
+        lease_until = pending["lease_until"]
+        dal.update(
+            "UPDATE vacation_image_cleanup SET next_attempt_at = %s WHERE image_name = %s",
+            (lease_until, image_name),
+        )
+
+    # Commit the lease before storage I/O. A crashed worker's lease expires.
+    # Match the lease when writing back so expired claims cannot overwrite newer work.
+    claim = (image_name, lease_until)
+    try:
+        ImageHandler.delete_image(image_name)
+    except Exception:
+        logger.exception("Failed to remove vacation image %r; retrying", image_name)
+        dal.update(
+            "UPDATE vacation_image_cleanup SET next_attempt_at = CURRENT_TIMESTAMP + INTERVAL 1 MINUTE "
+            "WHERE image_name = %s AND next_attempt_at = %s",
+            claim,
+        )
+    else:
+        dal.delete(
+            "DELETE FROM vacation_image_cleanup WHERE image_name = %s AND next_attempt_at = %s",
+            claim,
+        )
+    return True
 
 
 def run_worker():

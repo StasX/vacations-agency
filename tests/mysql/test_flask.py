@@ -207,7 +207,7 @@ def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, 
 
 def test_migrated_image_queue_retries_and_preserves_shared_images(client, trip, sql, monkeypatch):
     from logic.vacations_logic import VacationsLogic
-    from utils.image_cleanup import process_next_image
+    from utils.image_cleanup import enqueue_image_cleanup, process_next_image
     from utils.image_handler import ImageHandler
 
     sql.execute("SELECT state FROM schema_migrations WHERE version='0002'")
@@ -220,9 +220,17 @@ def test_migrated_image_queue_retries_and_preserves_shared_images(client, trip, 
     other_trip = sql.lastrowid
     image = Path(app.root_path) / 'static/images/vacations/old.jpg'
     image.write_bytes(b'old image')
+    transaction_states = []
 
     def storage_unavailable(image_name):
+        transaction_states.append(logic.dal.connection.in_transaction)
         raise OSError('storage unavailable')
+
+    class WorkerStopped(BaseException):
+        pass
+
+    def worker_stopped(image_name):
+        raise WorkerStopped()
 
     try:
         with app.app_context():
@@ -232,9 +240,17 @@ def test_migrated_image_queue_retries_and_preserves_shared_images(client, trip, 
                 assert process_next_image(logic.dal)
                 assert image.exists()
                 assert logic.delete_vacation(other_trip) == 1
+                with monkeypatch.context() as stopped:
+                    stopped.setattr(ImageHandler, 'delete_image', worker_stopped)
+                    with pytest.raises(WorkerStopped):
+                        process_next_image(logic.dal)
+                enqueue_image_cleanup(logic.dal, image.name)
+                assert not process_next_image(logic.dal)
+                sql.execute("UPDATE vacation_image_cleanup SET next_attempt_at=CURRENT_TIMESTAMP WHERE image_name='old.jpg'")
                 with monkeypatch.context() as failure:
                     failure.setattr(ImageHandler, 'delete_image', storage_unavailable)
                     assert process_next_image(logic.dal)
+                assert transaction_states == [False]
                 assert image.exists()
                 assert not process_next_image(logic.dal)
                 sql.execute("UPDATE vacation_image_cleanup SET next_attempt_at=CURRENT_TIMESTAMP WHERE image_name='old.jpg'")

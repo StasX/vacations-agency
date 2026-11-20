@@ -7,7 +7,7 @@ import re
 import runpy
 
 
-MIGRATIONS = Path(__file__).with_name('migrations')
+MIGRATIONS = Path(__file__).with_name('versions')
 LEDGER = 'schema_migrations'
 
 

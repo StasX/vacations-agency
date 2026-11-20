@@ -8,16 +8,16 @@ The MySQL service owns the shared schema. Its definition and initial data are in
 Flask and Django consume the same tables in `vacation_agency`; neither backend
 is the migration authority for those tables.
 
-The deployment operator applies schema changes once per shared database, before
-deploying code that requires them. Application startup does not run migrations.
-[`MySQL/migrate.py`](../MySQL/migrate.py) applies numbered migrations and records
+Compose runs the dedicated `database-migrations` service after MySQL becomes
+healthy and waits for it to exit successfully before starting the applications.
+[`Migrations/migrate.py`](../Migrations/migrate.py) applies numbered migrations and records
 their version, filename, SHA-256 checksum, state, and timestamps in the shared
 `schema_migrations` ledger. This ledger is owned by the migration tool, not either
 backend. Django application migration directories contain only `__init__.py`.
 
 ## Table responsibilities
 
-Schema ownership applies to all five tables. Runtime data responsibilities differ:
+MySQL owns the shared domain tables and the image cleanup queue.
 
 | Table | Flask | Django statistics service | Schema definition |
 | --- | --- | --- | --- |
@@ -26,6 +26,7 @@ Schema ownership applies to all five tables. Runtime data responsibilities diffe
 | `countries` | Reads destination choices and names | Reads destination names for statistics | MySQL SQL script |
 | `vacations` | Adds, updates, deletes, and lists vacations through administrator/customer flows | Reads and aggregates vacation dates and destinations | MySQL SQL script |
 | `likes` | Inserts/deletes customer likes and reads counts | Reads total likes and likes by destination | MySQL SQL script |
+| `vacation_image_cleanup` | Records pending image deletions for the worker | | MySQL migration `0002` |
 
 Roles and countries are provisioned by SQL; neither application currently exposes
 a management flow for their definitions. Django is not entirely read-only:
@@ -62,8 +63,9 @@ Changing `data.sql`, rebuilding the image, or restarting containers does not upg
 an existing volume. `CREATE TABLE IF NOT EXISTS` does not reconcile existing columns
 or constraints. Do not delete the database volume to deliver a schema update.
 
-Use the explicit Compose maintenance service for both existing and freshly
-initialized databases. It defaults to a plan and never replays seed data:
+On both existing and freshly initialized databases, Compose runs pending versions
+from the migration image. To preview the versions before startup or apply them
+separately, use:
 
 ```sh
 docker compose --env-file .env.production build database-migrations
@@ -74,8 +76,8 @@ docker compose --env-file .env.production run --rm database-migrations --apply
 
 The service uses the deployment's MySQL environment settings, connects internally
 to `vacations-database`, and requires permission to alter the affected tables and
-create/update its ledger. It is in the `tools` profile and is not run by normal
-`docker compose up`. It does not mount or replace the database volume. `--plan`
+create/update its ledger. `docker compose up --build` uses `--apply` and exits
+the migration container after the run. `--plan`
 reads the schema/history without creating a ledger or changing data; both modes
 use a database-specific advisory lock to serialize migration runners.
 Use the development environment file and override instead when maintaining the
@@ -89,15 +91,19 @@ not an automatic repair of arbitrary schema differences; unsupported column type
 or nullability stop the migration for review. It does not reset passwords or
 provision Redis statuses.
 
+Migration `0002__vacation_image_cleanup.py` creates the image cleanup queue.
+It preserves existing vacation rows and any queued work. The table can remain
+in place if application code is rolled back.
+
 For each subsequent change, use this deployment procedure:
 
 1. Define one reviewed upgrade for the shared database. Add the next numbered
-   `NNNN__description.py` file under `MySQL/migrations/`, implementing
+   `NNNN__description.py` file under `Migrations/versions/`, implementing
    `upgrade(connection)` with explicit SQL and schema checks. Document its
    source/target schema, backfill, compatibility, restartability, and recovery.
    Never edit, remove, or renumber a recorded migration; add a new version instead.
-2. Update `MySQL/data.sql` to represent the resulting schema for fresh installations.
-   Update Flask SQL and Django model mappings together, including column lengths,
+2. Verify that migrations apply to fresh installations after `MySQL/data.sql`
+   initializes the database. Update Flask SQL and Django model mappings as needed, including column lengths,
    foreign keys, nullability, collation, and the composite likes primary key
    `(user_id, vacation_id)`.
 3. Test both a fresh SQL initialization and the upgrade against a copy of the old

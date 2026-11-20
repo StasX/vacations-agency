@@ -12,8 +12,8 @@ COPY Django/src /app/Django/src
 COPY Flask/src /app/Flask/src
 COPY tests/mysql /app/tests/mysql
 COPY tests/redis /app/tests/redis
-COPY MySQL/migrate.py /app/MySQL/migrate.py
-COPY MySQL/migrations /app/MySQL/migrations
+COPY Migrations/migrate.py /app/Migrations/migrate.py
+COPY Migrations/versions /app/Migrations/versions
 USER testuser:testgroup
 # checkov:skip=CKV_DOCKER_2:One-shot test runner exits with the pytest result.
 ENTRYPOINT ["python", "-m", "pytest", "-c", "tests/mysql/pytest.ini", "-p", "no:django", "-v"]

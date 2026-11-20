@@ -151,7 +151,11 @@ def test_admin_edit_keeps_or_replaces_image(client, app, sign_in, image_director
     params = app.test_dal.update.call_args.args[1]
     assert params[:5] == ("1", "Holiday", "2099-01-01", "2099-01-02", "100")
     assert params[-1] == 12
-    assert old.exists() == (not replace)
+    assert old.exists()
+    if replace:
+        assert app.test_dal.insert.call_args.args[1] == (old.name,)
+    else:
+        app.test_dal.insert.assert_not_called()
     assert (image_directory /
             params[-2]).read_bytes() == (make_image() if replace else b"old")
 

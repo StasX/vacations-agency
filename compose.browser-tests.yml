@@ -29,6 +29,10 @@ x-image-storage: &image-storage
   MINIO_SECURE: "false"
 
 services:
+  database-migrations:
+    extends:
+      file: compose.mysql-tests.yml
+      service: database-migrations
   minio:
     build: ./MinIO
     environment:
@@ -56,6 +60,8 @@ services:
     environment:
       <<: [*environment, *image-storage]
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       image-initialization:
         condition: service_completed_successfully
       mysql:
@@ -66,6 +72,8 @@ services:
     build: ./Django
     environment: *environment
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       mysql:
         condition: service_healthy
       redis:

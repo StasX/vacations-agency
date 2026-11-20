@@ -95,8 +95,9 @@ prefix. The default production project name and volume keys remain unchanged.
 The two profiles use overlapping
 host ports by default; stop the other stack or customize port mappings to run
 both simultaneously. Services now publish only on host
-loopback, so remote access must go through the HTTPS proxy. Run schema upgrades
-with the selected environment explicitly:
+loopback, so remote access must go through the HTTPS proxy. The one-shot
+`database-migrations` service applies pending schema changes during Compose
+startup. To preview or apply changes separately with the selected environment:
 
 ```sh
 docker compose --env-file .env.production build database-migrations

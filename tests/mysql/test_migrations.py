@@ -7,7 +7,7 @@ import shutil
 import mysql.connector
 import pytest
 
-spec = importlib.util.spec_from_file_location('migration_runner', Path(__file__).resolve().parents[2] / 'MySQL/migrate.py')
+spec = importlib.util.spec_from_file_location('migration_runner', Path(__file__).resolve().parents[2] / 'Migrations/migrate.py')
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
@@ -31,6 +31,7 @@ def database():
 def test_upgrade_retains_existing_accounts_and_relationships(database):
     cursor = database.cursor()
     cursor.execute('ALTER TABLE users MODIFY COLUMN password VARCHAR(64) NOT NULL')
+    cursor.execute('DROP TABLE vacation_image_cleanup')
     cursor.execute("INSERT INTO users (id,first_name,last_name,email,password,role_id) VALUES (101,'Existing','Customer','existing@test.com',%s,2)", ('a' * 64,))
     cursor.execute("INSERT INTO vacations (id,country_id,description,start_date,end_date,price,image) VALUES (101,1,'Existing holiday','2099-01-01','2099-01-07',123.45,'existing.png')")
     cursor.execute('INSERT INTO likes (user_id,vacation_id) VALUES (101,101)')
@@ -38,26 +39,28 @@ def test_upgrade_retains_existing_accounts_and_relationships(database):
     for table in ('users', 'roles', 'countries', 'vacations', 'likes'):
         cursor.execute(f'SELECT * FROM {table} ORDER BY 1')
         snapshots[table] = cursor.fetchall()
-    assert runner.migrate(database) == ['0001']
+    assert runner.migrate(database) == ['0001', '0002']
     cursor.execute("SHOW TABLES LIKE 'schema_migrations'")
     assert cursor.fetchone() is None  # Plan creates no ledger or schema.
-    assert runner.migrate(database, apply=True) == ['0001']
+    assert runner.migrate(database, apply=True) == ['0001', '0002']
     assert runner.migrate(database, apply=True) == []
     for table, rows in snapshots.items():
         cursor.execute(f'SELECT * FROM {table} ORDER BY 1')
         assert cursor.fetchall() == rows
     cursor.execute("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='password'")
     assert cursor.fetchone()[0] == 128
-    cursor.execute('SELECT version,state FROM schema_migrations')
-    assert cursor.fetchall() == [('0001', 'applied')]
+    cursor.execute('SELECT version,state FROM schema_migrations ORDER BY version')
+    assert cursor.fetchall() == [('0001', 'applied'), ('0002', 'applied')]
+    cursor.execute('SELECT image_name FROM vacation_image_cleanup')
+    assert cursor.fetchall() == []
     cursor.close()
 
 
 def test_current_schema_can_be_baselined_without_seed_replay(database, tmp_path):
-    assert runner.migrate(database, apply=True) == ['0001']
+    assert runner.migrate(database, apply=True) == ['0001', '0002']
     assert runner.migrate(database) == []
     shutil.copytree(runner.MIGRATIONS, tmp_path / 'migrations')
-    migration = next((tmp_path / 'migrations').glob('*.py'))
+    migration = tmp_path / 'migrations/0001__password_hash_capacity.py'
     migration.write_text(migration.read_text() + '\n# altered history\n')
     with pytest.raises(RuntimeError, match='changed after recording'):
         runner.migrate(database, apply=True, directory=tmp_path / 'migrations')
@@ -67,7 +70,7 @@ def test_wider_password_column_is_never_narrowed(database):
     cursor = database.cursor()
     try:
         cursor.execute('ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL')
-        assert runner.migrate(database, apply=True) == ['0001']
+        assert runner.migrate(database, apply=True) == ['0001', '0002']
         cursor.execute("SELECT CHARACTER_MAXIMUM_LENGTH FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='users' AND column_name='password'")
         assert cursor.fetchone()[0] == 255
     finally:
@@ -76,7 +79,7 @@ def test_wider_password_column_is_never_narrowed(database):
 
 def test_interrupted_ddl_blocks_until_explicit_reviewed_retry(database, tmp_path):
     shutil.copytree(runner.MIGRATIONS, tmp_path / 'migrations')
-    migration = tmp_path / 'migrations/0002__interrupted.py'
+    migration = tmp_path / 'migrations/0003__interrupted.py'
     migration.write_text('''def upgrade(connection):
     cursor = connection.cursor()
     try:
@@ -89,9 +92,9 @@ def test_interrupted_ddl_blocks_until_explicit_reviewed_retry(database, tmp_path
 ''')
     with pytest.raises(RuntimeError, match='simulated interruption'):
         runner.migrate(database, apply=True, directory=migration.parent)
-    with pytest.raises(RuntimeError, match='Incomplete migration 0002'):
+    with pytest.raises(RuntimeError, match='Incomplete migration 0003'):
         runner.migrate(database, apply=True, directory=migration.parent)
-    assert runner.migrate(database, apply=True, directory=migration.parent, retry_failed='0002') == ['0002']
+    assert runner.migrate(database, apply=True, directory=migration.parent, retry_failed='0003') == ['0003']
     assert runner.migrate(database, apply=True, directory=migration.parent) == []
 
 

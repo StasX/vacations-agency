@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from unittest.mock import MagicMock
 import pytest
 from logic.auth_logic import AuthLogic
@@ -92,3 +93,31 @@ def test_image_failure_prevents_database_insert(app, monkeypatch):
         VacationsLogic().add_vacation(VacationModel(1, "1", "Holiday",
                                                     "2099-01-01", "2099-01-02", "100", object()))
     app.test_dal.insert.assert_not_called()
+
+
+@pytest.mark.parametrize("operation", ["add", "update"])
+@pytest.mark.parametrize("during_commit", [False, True])
+def test_failed_vacation_write_only_discards_upload_before_commit(app, monkeypatch, operation, during_commit):
+    @contextmanager
+    def transaction():
+        yield
+        if during_commit:
+            raise OSError("lost connection during commit")
+
+    app.test_dal.transaction.side_effect = transaction
+    app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
+    if not during_commit:
+        statement = app.test_dal.insert if operation == "add" else app.test_dal.update
+        statement.side_effect = OSError("statement failed")
+    monkeypatch.setattr("logic.vacations_logic.ImageHandler.save_image", lambda image: "new.jpg")
+    delete_image = MagicMock()
+    monkeypatch.setattr("logic.vacations_logic.ImageHandler.delete_image", delete_image)
+
+    vacation = VacationModel(12, "1", "Holiday", "2099-01-01", "2099-01-02", "100", object())
+    with pytest.raises(OSError, match="commit" if during_commit else "statement failed"):
+        getattr(VacationsLogic(), f"{operation}_vacation")(vacation)
+
+    if during_commit:
+        delete_image.assert_not_called()
+    else:
+        delete_image.assert_called_once_with("new.jpg")

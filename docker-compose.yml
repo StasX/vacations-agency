@@ -31,6 +31,28 @@ services:
       - image-backend
     restart: "no"
 
+  image-cleanup:
+    build: ./Flask
+    entrypoint: [python, -m, utils.image_cleanup]
+    environment:
+      <<: *image-storage
+      PYTHON_DOTENV_DISABLED: "1"
+      MYSQL_HOST: vacations-database
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    depends_on:
+      database-migrations:
+        condition: service_completed_successfully
+      image-initialization:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+    networks:
+      - default
+      - image-backend
+    restart: unless-stopped
+
   vacations-redis:
     container_name: vacations-redis
     image: vacations-redis:local
@@ -66,7 +88,7 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in the selected environment file}
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=tcp --host=127.0.0.1 --user=$$MYSQL_USER --database=$$MYSQL_DATABASE --execute='SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,12 +96,10 @@ services:
 
   # ------------------------------------------------------------------------------------------
 
-  # Explicit shared-schema maintenance; never replays seed data.
+  # Apply pending versions before either backend accepts traffic.
   database-migrations:
-    profiles: [tools]
-    build:
-      context: ./MySQL
-      dockerfile: Dockerfile.migrations
+    build: ./Migrations
+    command: ["--apply"]
     environment:
       MYSQL_HOST: vacations-database
       MYSQL_PORT: "3306"
@@ -89,6 +109,7 @@ services:
     depends_on:
       vacations-database:
         condition: service_healthy
+    restart: "no"
 
   # Django service: 
   vacations-statistics:
@@ -140,6 +161,8 @@ services:
       JWT_REDIS_URL: redis://vacations-redis:6379/0
       JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       vacations-redis:
         condition: service_healthy
       vacations-database:
@@ -153,6 +176,8 @@ services:
   vacations-catalog:
     container_name: vacations-catalog
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       image-initialization:
         condition: service_completed_successfully
       vacations-minio:

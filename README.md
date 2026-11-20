@@ -205,14 +205,19 @@ For Flask outside Compose, set `MINIO_ENDPOINT` to a host and port,
 Run `python -m utils.minio_images` from `Flask/src` to create and seed the bucket.
 Flask uses local image storage when `MINIO_ENDPOINT` is unset.
 
+When a vacation image is replaced or removed, MySQL records pending cleanup
+with the vacation change. The Compose `image-cleanup` worker deletes images
+with no remaining references and retries failed deletions. For Flask outside
+Compose, run `python -m utils.image_cleanup` from `Flask/src` with the same
+database and image storage settings.
+
 ## Shared Database Ownership
 
 The MySQL service defines all five shared tables through `MySQL/data.sql`.
-Flask manages customer and vacation data; Django primarily reads statistics and
-also upgrades password hashes during login. Neither backend currently runs shared
-schema migrations at startup. Existing database volumes use the explicit
-`database-migrations` maintenance service with `--plan` and `--apply`;
-rebuilding the MySQL image does not apply seed changes to them.
+Flask manages customer and vacation data. Django primarily reads statistics and
+also upgrades password hashes during login. On Compose startup, the one-shot
+`database-migrations` service applies pending migrations and exits before
+the backends start. The image cleanup table is created by migration `0002`.
 
 See [database ownership and migrations](docs/database-ownership.md) for table
 responsibilities, Django model mappings, and the deployment procedure.

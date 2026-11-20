@@ -1,10 +1,10 @@
 FROM python:3.14.4-alpine3.23
 WORKDIR /migrations
-COPY migration-requirements.txt .
-RUN pip install --no-cache-dir -r migration-requirements.txt && \
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt && \
     addgroup -S migrator && adduser -S migrator -G migrator
 COPY migrate.py .
-COPY migrations/ ./migrations/
+COPY versions/ ./versions/
 USER migrator
 # checkov:skip=CKV_DOCKER_2:One-shot migration tool exits after plan/apply.
 ENTRYPOINT ["python", "migrate.py"]

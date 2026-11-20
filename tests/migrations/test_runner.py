@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-spec = importlib.util.spec_from_file_location('migration_runner', Path(__file__).resolve().parents[2] / 'MySQL/migrate.py')
+spec = importlib.util.spec_from_file_location('migration_runner', Path(__file__).resolve().parents[2] / 'Migrations/migrate.py')
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 

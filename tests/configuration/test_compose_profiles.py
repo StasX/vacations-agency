@@ -51,6 +51,14 @@ def test_base_is_production_even_with_development_environment_file():
         assert service.get('entrypoint') is None
     assert frontend['build']['dockerfile'] == 'Dockerfile'
     initializer = services['account-initialization']
+    migrator = services['database-migrations']
+    assert Path(migrator['build']['context']) == ROOT / 'Migrations'
+    assert migrator['command'] == ['--apply']
+    assert migrator['restart'] == 'no'
+    assert migrator['depends_on']['vacations-database']['condition'] == 'service_healthy'
+    assert initializer['depends_on']['database-migrations']['condition'] == 'service_completed_successfully'
+    for consumer in (flask, services['image-cleanup']):
+        assert consumer['depends_on']['database-migrations']['condition'] == 'service_completed_successfully'
     assert Path(initializer['build']['context']) == ROOT / 'scripts' / 'account-status'
     assert 'DJANGO_SETTINGS_MODULE' not in initializer['environment']
     assert 'SECRET_KEY' not in initializer['environment']

@@ -73,7 +73,8 @@ def test_admin_delete_form_submits_with_csrf(client, app, sign_in, image_directo
     assert client.post("/vacations/12/delete", data={"csrf_token": token}).status_code == 302
     app.test_dal.delete.assert_called_once()
     assert app.test_dal.delete.call_args.args[1] == (12,)
-    assert not image.exists()
+    assert app.test_dal.insert.call_args.args[1] == ("trip.jpg",)
+    assert image.exists()
 
 
 @pytest.mark.parametrize("liked", [0, 1])

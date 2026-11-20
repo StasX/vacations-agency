@@ -48,6 +48,19 @@ services:
       retries: 40
       start_period: 20s
 
+  database-migrations:
+    build: ./Migrations
+    command: ["--apply"]
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: vacation_agency
+      MYSQL_USER: integration
+      MYSQL_PASSWORD: integration-tests-only
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
   django-tests:
     container_name: vacations-mysql-tests-django
     build:
@@ -59,6 +72,8 @@ services:
       <<: *test-environment
       TEST_APPLICATION: Django
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       mysql:
@@ -76,6 +91,8 @@ services:
       <<: *test-environment
       TEST_APPLICATION: Flask
     depends_on:
+      database-migrations:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       mysql:

@@ -47,13 +47,14 @@ class DAL:
             self.__connect()
 
     @contextmanager
-    def transaction(self):
+    def transaction(self, *, isolation_level=None):
         """Commit dependent statements together; never reconnect mid-transaction."""
         if self._in_transaction:
             raise RuntimeError('Nested transactions are not supported')
         self._ensure_connection()
         connection = self.connection
-        connection.start_transaction()
+        options = {"isolation_level": isolation_level} if isolation_level else {}
+        connection.start_transaction(**options)
         self._in_transaction = True
         try:
             yield self

@@ -1,7 +1,24 @@
+import logging
+
 from utils.dal import DAL
 from utils.image_handler import ImageHandler
-from models.vacation_model import VacationModel
+from utils.image_cleanup import enqueue_image_cleanup
 from models.client_errors import ResourceNotFoundError
+
+
+logger = logging.getLogger(__name__)
+
+
+def discard_failed_upload(image_name, commit_started):
+    if not image_name:
+        return
+    if commit_started:
+        logger.warning("Keeping vacation image %r because the database commit outcome is unknown", image_name)
+        return
+    try:
+        ImageHandler.delete_image(image_name)
+    except Exception:
+        logger.exception("Failed to discard vacation image %r after a database error", image_name)
 
 
 class VacationsLogic:
@@ -48,30 +65,34 @@ class VacationsLogic:
         sql = "INSERT INTO vacations(country_id, description, start_date, end_date, price, image) VALUES (%s, %s, %s, %s, %s, %s)"
         params = (vacation.country, vacation.description, vacation.start_date,
                   vacation.end_date, vacation.price, image_name)
+        commit_started = False
         try:
-            self.dal.insert(sql, params)
+            with self.dal.transaction():
+                self.dal.insert(sql, params)
+                commit_started = True
         except Exception:
-            ImageHandler.delete_image(image_name)
+            discard_failed_upload(image_name, commit_started)
             raise
 
     def update_vacation(self, vacation):
-        old_image = None
-        image_name = None
+        uploaded_image = None
+        commit_started = False
         try:
             with self.dal.transaction():
                 old_image = self.get_old_image_name(vacation.id, for_update=True)
-                image_name = ImageHandler.save_image(vacation.image) or old_image
+                uploaded_image = ImageHandler.save_image(vacation.image)
+                image_name = uploaded_image or old_image
                 sql = "UPDATE vacations SET country_id = %s, description = %s, start_date = %s, end_date = %s, price = %s, image = %s WHERE id = %s"
                 params = (vacation.country, vacation.description, vacation.start_date,
                           vacation.end_date, vacation.price, image_name, vacation.id)
                 if self.dal.update(sql, params) == 0:
                     self.get_one_vacation(vacation.id)
+                if image_name != old_image:
+                    enqueue_image_cleanup(self.dal, old_image)
+                commit_started = True
         except Exception:
-            if image_name and image_name != old_image:
-                ImageHandler.delete_image(image_name)
+            discard_failed_upload(uploaded_image, commit_started)
             raise
-        if image_name != old_image:
-            ImageHandler.delete_image(old_image)
 
     def delete_vacation(self, id):
         with self.dal.transaction():
@@ -79,7 +100,7 @@ class VacationsLogic:
             row_count = self.dal.delete("DELETE FROM vacations WHERE id = %s", (id,))
             if row_count == 0:
                 raise ResourceNotFoundError(id)
-        ImageHandler.delete_image(old_image)
+            enqueue_image_cleanup(self.dal, old_image)
         return row_count
 
     def get_old_image_name(self, id, for_update=False):

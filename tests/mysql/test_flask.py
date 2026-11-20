@@ -203,3 +203,45 @@ def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, 
     assert sql.fetchone()[0] == pytest.approx(123.45, abs=0.01)
     assert client.post('/vacations/999999/edit', data=form).status_code == 404
     assert client.post('/vacations/999999/delete', data={'csrf_token': token}).status_code == 404
+
+
+def test_migrated_image_queue_retries_and_preserves_shared_images(client, trip, sql, monkeypatch):
+    from logic.vacations_logic import VacationsLogic
+    from utils.image_cleanup import process_next_image
+    from utils.image_handler import ImageHandler
+
+    sql.execute("SELECT state FROM schema_migrations WHERE version='0002'")
+    assert sql.fetchone() == ('applied',)
+    sql.execute(
+        'INSERT INTO vacations (country_id,description,start_date,end_date,price,image) '
+        'SELECT country_id,description,start_date,end_date,price,image FROM vacations WHERE id=%s',
+        (trip,),
+    )
+    other_trip = sql.lastrowid
+    image = Path(app.root_path) / 'static/images/vacations/old.jpg'
+    image.write_bytes(b'old image')
+
+    def storage_unavailable(image_name):
+        raise OSError('storage unavailable')
+
+    try:
+        with app.app_context():
+            logic = VacationsLogic()
+            try:
+                assert logic.delete_vacation(trip) == 1
+                assert process_next_image(logic.dal)
+                assert image.exists()
+                assert logic.delete_vacation(other_trip) == 1
+                with monkeypatch.context() as failure:
+                    failure.setattr(ImageHandler, 'delete_image', storage_unavailable)
+                    assert process_next_image(logic.dal)
+                assert image.exists()
+                assert not process_next_image(logic.dal)
+                sql.execute("UPDATE vacation_image_cleanup SET next_attempt_at=CURRENT_TIMESTAMP WHERE image_name='old.jpg'")
+                assert process_next_image(logic.dal)
+                assert not image.exists()
+                assert not process_next_image(logic.dal)
+            finally:
+                logic.close()
+    finally:
+        sql.execute("DELETE FROM vacation_image_cleanup WHERE image_name='old.jpg'")

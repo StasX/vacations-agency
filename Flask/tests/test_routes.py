@@ -87,7 +87,7 @@ def test_admin_add_saves_uploaded_image(client, app, sign_in, tmp_path, monkeypa
     assert (image_dir / params[-1]).read_bytes() == make_image()
 
 
-def test_admin_delete_removes_record_and_image(client, app, sign_in, tmp_path, monkeypatch):
+def test_admin_delete_removes_record_and_queues_image(client, app, sign_in, tmp_path, monkeypatch):
     sign_in(1)
     monkeypatch.setattr(app, "root_path", str(tmp_path))
     image = tmp_path / "static/images/vacations/rome.jpg"
@@ -95,8 +95,9 @@ def test_admin_delete_removes_record_and_image(client, app, sign_in, tmp_path, m
     image.write_bytes(b"image")
     app.test_dal.get_scalar.return_value = {"image": "rome.jpg"}
     assert client.post("/vacations/1/delete").status_code == 302
-    assert not image.exists()
+    assert image.exists()
     assert app.test_dal.delete.call_args.args[1] == (1,)
+    assert app.test_dal.insert.call_args.args[1] == ("rome.jpg",)
 
 
 def test_missing_page_returns_404(client):

@@ -1,11 +1,11 @@
-from flask import session, request
+from flask import g, request
 from logic.auth_logic import AuthLogic
 from models.credentials_model import CredentialsModel
 from models.user_model import UserModel
 from models.role_model import RoleModel
 from models.client_errors import ValidationError, AuthError
 from utils.security import Security
-from utils import auth_status
+from utils import auth_status, auth_token
 from hmac import compare_digest
 
 
@@ -31,12 +31,7 @@ class AuthFacade:
             if Security.needs_rehash(user["password"]):
                 user['password'] = Security.hash(password)
                 self.logic.update_password(user["id"], user['password'])
-        fingerprint = Security.password_fingerprint(user['password'])
-        del user["password"]
-        session.clear()
-        session["current_user"] = user
-        session['auth_status'] = status
-        session['password_fingerprint'] = fingerprint
+        return auth_token.issue_token(user, status)
 
     # Register
     def register(self):
@@ -61,46 +56,36 @@ class AuthFacade:
             status = auth_status.initialize_status(user['id'])
             if not auth_status.is_enabled(status):
                 raise AuthError("Account disabled.")
-        fingerprint = Security.password_fingerprint(user['password'])
-        del user["password"]
-        session.clear()
-        session["current_user"] = user
-        session['auth_status'] = status
-        session['password_fingerprint'] = fingerprint
-
-    def logout(self):
-        session.clear()
+        return auth_token.issue_token(user, status)
 
     # Block non logged-in users: 
     def block_anonymous(self):
-        user = session.get("current_user")
-        if not user: raise AuthError("You are not logged-in.")
-        self.check_status(user)
+        if "current_user" not in g:
+            g.current_user = self.check_status()
 
     # Block non admin users: 
     def block_non_admin(self):
-        user = session.get("current_user")
-        if not user: raise AuthError("You are not logged-in.")
-        self.check_status(user)
-        if user["role"] != RoleModel.Admin.value: raise AuthError("You are not authorized.")
+        self.block_anonymous()
+        if g.current_user["role"] != RoleModel.Admin.value:
+            raise AuthError("You are not authorized.")
 
     @staticmethod
-    def check_status(user):
-        if not isinstance(user, dict) or type(user.get('id')) is not int or user['id'] <= 0:
-            session.clear()
-            raise AuthError("Your session is no longer valid.")
-        status = auth_status.get_status(user['id'])
-        if not auth_status.is_enabled(status) or session.get('auth_status') != status:
-            session.clear()
-            raise AuthError("Your session is no longer valid.")
+    def check_status():
+        claims = auth_token.get_claims()
+        if claims is None:
+            raise AuthError("You are not logged-in.")
+        user_id = int(claims["sub"])
+        status = auth_status.get_status(user_id)
+        if status != claims["status"] or not auth_status.is_enabled(status) or auth_token.is_revoked(claims):
+            auth_token.clear_claims()
+            raise AuthError("Your login is no longer valid.")
         logic = AuthLogic()
         try:
-            current = logic.get_user_by_id(user['id'])
+            current = logic.get_user_by_id(user_id)
         finally:
             logic.close()
-        fingerprint = session.get('password_fingerprint')
-        if (not current or current['role'] != user.get('role')
-                or not isinstance(fingerprint, str)
-                or not compare_digest(fingerprint, Security.password_fingerprint(current['password']))):
-            session.clear()
-            raise AuthError("Your session is no longer valid.")
+        if (not current or current["role"] != claims["role"]
+                or not compare_digest(claims["pwd"], Security.password_fingerprint(current["password"]))):
+            auth_token.clear_claims()
+            raise AuthError("Your login is no longer valid.")
+        return {key: value for key, value in current.items() if key != "password"}

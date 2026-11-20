@@ -1,5 +1,5 @@
 import pytest
-from flask import session
+from utils.auth_token import COOKIE
 from facades.auth_facade import AuthFacade
 from facades.likes_facade import LikesFacade
 from facades.vacations_facade import VacationsFacade
@@ -11,13 +11,12 @@ from models.client_errors import AuthError, ValidationError
     (2, "block_anonymous", True), (2, "block_non_admin", False),
     (1, "block_anonymous", True), (1, "block_non_admin", True),
 ])
-def test_auth_guards(app, role, method, allowed):
-    with app.test_request_context():
-        if role:
-            session["current_user"] = {"id": 7, "role": role}
-            session['auth_status'] = 'enabled:00000000-0000-4000-8000-000000000007'
-            from utils.security import Security
-            session['password_fingerprint'] = Security.password_fingerprint('test-password-hash')
+def test_auth_guards(app, client, sign_in, role, method, allowed):
+    headers = {}
+    if role:
+        sign_in(role)
+        headers["Cookie"] = f"{COOKIE}={client.get_cookie(COOKIE).value}"
+    with app.test_request_context(headers=headers):
         if allowed:
             assert getattr(AuthFacade(), method)() is None
         else:

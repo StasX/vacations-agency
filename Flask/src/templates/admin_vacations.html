@@ -11,7 +11,7 @@
                             class="fa-solid fa-plus" aria-hidden="true"></i> Add Vacation</a>
                 </div>
                 <div class="col-md-2 col-sm-2 coll-xs-3 offset-md-8 offset-sm-8 offset-xs-6">
-                    {% set user = session.get("current_user") %}
+                    {% set user = g.current_user %}
                     <div class="user-container">
                         <div class="welcome-user">Welcome: <span class="user-name">{{ user.first_name }} {{
                                 user.last_name

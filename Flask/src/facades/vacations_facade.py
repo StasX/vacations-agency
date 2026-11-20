@@ -1,4 +1,4 @@
-from flask import session, request
+from flask import g, request
 from models.user_model import UserModel
 from models.client_errors import ValidationError
 from models.vacation_model import VacationModel
@@ -14,8 +14,7 @@ class VacationsFacade:
     # Get all vacations
     def get_all_vacations(self):
         # Get id of current user
-        current_user = session.get("current_user")
-        user_id = current_user["id"]
+        user_id = g.current_user["id"]
         all_vacations = self.logic.get_all_vacations(user_id)
         all_vacations=list(map(DateHandler.format_vacation_dates,all_vacations))
 

@@ -7,6 +7,7 @@ from views.likes_view import likes_blueprint
 from utils.app_config import AppConfig
 from utils.logger import Logger
 from utils.csrf import init_csrf
+from utils.auth_token import init_auth_token
 from utils.dal import close_request_connections
 from models.client_errors import ResourceNotFoundError
 from redis.exceptions import RedisError
@@ -17,13 +18,8 @@ app = Flask(__name__)
 app.config.from_object(AppConfig.flask_config)
 app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
-# Create session secret key:
-app.secret_key = AppConfig.session_secret_key
-app.config.update(
-    SESSION_COOKIE_SECURE=AppConfig.session_cookie_secure,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE="Lax",
-)
+app.config["JWT_SECRET_KEY"] = AppConfig.jwt_secret_key
+init_auth_token(app)
 init_csrf(app)
 app.teardown_request(close_request_connections)
 

@@ -223,8 +223,8 @@ Account authentication status lives in Redis under `vacations:auth:status:<user_
 no MySQL schema migration is required. Status keys have no expiry and use the
 persistent Redis volume. From a Django shell, disable an account with
 `from utils.auth_status import set_enabled; set_enabled(7, False)` and enable it
-with `set_enabled(7, True)`. Each status change invalidates earlier dashboard
-tokens and Flask sessions, including after re-enabling. Missing or malformed status keys deny authentication; login never creates or
+with `set_enabled(7, True)`. Each status change invalidates earlier dashboard and
+Flask JWTs, including after re-enabling. Missing or malformed status keys deny authentication; login never creates or
 repairs them. Compose runs `account-initialization` before starting either
 backend. It enables every existing MySQL user whose Redis status is missing,
 so seeded accounts can sign in on a fresh deployment. Existing statuses,
@@ -244,9 +244,15 @@ login alone never recreates status. Redis outages block authenticated
 requests. Dashboard requests also recheck MySQL for deletion, role changes, and
 password changes. Previously issued tokens without the status claim require a
 new login. Flask protected requests also recheck MySQL for account deletion,
-role changes, and password changes. Flask sessions created before password
-fingerprints were introduced require a new login. Password fingerprints are
-keyed digests; password hashes are never stored in the browser session.
+role changes, and password changes.
+
+Flask signs its browser JWTs with `FLASK_JWT_SECRET_KEY`. Set a unique random key
+of at least 32 bytes in the Compose environment file, separate from Django's
+`SECRET_KEY`. Flask stores the JWT in an HttpOnly, SameSite=Lax cookie that
+expires after eight hours and requires HTTPS in production. Forms still require
+CSRF tokens. Logout revokes the JWT in Redis until it expires. Flask users
+sign in again after upgrading from session cookies. Rebuild and recreate Redis
+along with Flask so Redis loads the JWT revocation ACL.
 
 Flask and Django share PBKDF2-SHA256 password hashes with 1,000,000 iterations
 and a random salt for each password. Existing SHA-512 hashes are upgraded on

@@ -8,6 +8,7 @@ import pytest
 def no_redis(monkeypatch):
     store = MagicMock()
     store.get.return_value = 'enabled:00000000-0000-4000-8000-000000000007'
+    store.exists.return_value = 0
     store.eval.return_value = 0
     monkeypatch.setattr('utils.auth_status.get_redis', lambda: store)
     return store
@@ -35,13 +36,11 @@ def app(monkeypatch):
     monkeypatch.setitem(application.config, "TESTING", True)
     # Dedicated CSRF tests enable protection; existing tests isolate route behavior.
     monkeypatch.setitem(application.config, "CSRF_ENABLED", False)
-    monkeypatch.setitem(application.config, "SECRET_KEY", "test-only-secret")
+    monkeypatch.setitem(application.config, "JWT_SECRET_KEY", "test-only-flask-jwt-key-at-least-32-bytes")
     monkeypatch.setattr(application, "test_dal",
                         dal.return_value, raising=False)
-    from flask import session
     from logic.auth_logic import AuthLogic
-    account_lookup = MagicMock(side_effect=lambda user_id: {
-        **session['current_user'], 'password': 'test-password-hash'})
+    account_lookup = MagicMock()
     monkeypatch.setattr(AuthLogic, 'get_user_by_id', account_lookup)
     monkeypatch.setattr(application, 'test_account_lookup', account_lookup, raising=False)
     yield application
@@ -80,18 +79,30 @@ def request_connections(app, monkeypatch):
 
 
 @pytest.fixture
-def sign_in(client):
+def sign_in(client, app, no_redis):
     def login(role=2):
+        from utils.auth_token import COOKIE, issue_token
+
         user = dict(id=7, first_name="Test", last_name="User",
                     email="test@example.com", role=role)
-        with client.session_transaction() as session:
-            session["current_user"] = user
-            session['auth_status'] = 'enabled:00000000-0000-4000-8000-000000000007'
-            with client.application.app_context():
-                from utils.security import Security
-                session['password_fingerprint'] = Security.password_fingerprint('test-password-hash')
+        account = {**user, "password": "test-password-hash"}
+        app.test_account_lookup.return_value = account
+        with app.app_context():
+            client.set_cookie(COOKIE, issue_token(account, no_redis.get.return_value))
         return user
     return login
+
+
+@pytest.fixture
+def auth_claims(client, app):
+    from utils.auth_token import COOKIE, get_claims
+
+    def read():
+        cookie = client.get_cookie(COOKIE)
+        assert cookie is not None
+        with app.test_request_context(headers={"Cookie": f"{COOKIE}={cookie.value}"}):
+            return get_claims()
+    return read
 
 
 def make_image(color="red", image_format="JPEG"):

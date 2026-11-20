@@ -1,3 +1,4 @@
+from utils.auth_token import COOKIE
 from hashlib import sha512
 import pytest
 from utils.app_config import AppConfig
@@ -25,8 +26,7 @@ def test_legacy_login_upgrades_only_correct_password(client, app, password, allo
     else:
         assert b"Invalid Email or Password" in response.data
         app.test_dal.update.assert_not_called()
-        with client.session_transaction() as session:
-            assert "current_user" not in session
+        assert client.get_cookie(COOKIE) is None
 
 
 def test_modern_login_does_not_rehash(client, app):

@@ -8,15 +8,19 @@ from mysql.connector import IntegrityError
 from app import app
 from logic.likes_logic import LikesLogic
 from utils.dal import DAL
+from utils.auth_token import COOKIE, get_claims, issue_token
 from utils.security import Security
 
 
-def session_fingerprint(user_id):
+def sign_in(client, user_id, role=1):
+    from utils.auth_status import get_status
+
     dal = DAL()
     try:
-        user = dal.get_scalar('SELECT password FROM users WHERE id=%s', (user_id,))
+        account = dal.get_scalar('SELECT password FROM users WHERE id=%s', (user_id,))
         with app.app_context():
-            return Security.password_fingerprint(user['password'])
+            token = issue_token({**account, 'id': user_id, 'role': role}, get_status(user_id))
+        client.set_cookie(COOKIE, token)
     finally:
         dal.close()
 
@@ -130,12 +134,8 @@ def test_concurrent_like_toggles_are_serialized(admin, trip, sql):
 
 @pytest.mark.parametrize('role', [1, 2])
 def test_vacation_country_name_reaches_cards_from_real_mysql(client, admin, trip, sql, role):
-    from utils.auth_status import get_status
     sql.execute('UPDATE users SET role_id=%s WHERE id=%s', (role, admin))
-    with client.session_transaction() as session:
-        session['current_user'] = {'id': admin, 'role': role, 'first_name': 'Test', 'last_name': 'User'}
-        session['auth_status'] = get_status(admin)
-        session['password_fingerprint'] = session_fingerprint(admin)
+    sign_in(client, admin, role)
     response = client.get('/vacations')
     assert response.status_code == 200
     assert b'<span class="card-city">Greece</span>' in response.data
@@ -144,11 +144,7 @@ def test_vacation_country_name_reaches_cards_from_real_mysql(client, admin, trip
 
 @pytest.mark.parametrize('change', ['deleted', 'demoted', 'password'])
 def test_database_account_changes_revoke_flask_admin(client, admin, trip, sql, change):
-    from utils.auth_status import get_status
-    with client.session_transaction() as session:
-        session['current_user'] = {'id': admin, 'role': 1}
-        session['auth_status'] = get_status(admin)
-        session['password_fingerprint'] = session_fingerprint(admin)
+    sign_in(client, admin)
     assert client.get(f'/vacations/{trip}/edit').status_code == 200
     if change == 'deleted':
         sql.execute('DELETE FROM users WHERE id=%s', (admin,))
@@ -159,16 +155,11 @@ def test_database_account_changes_revoke_flask_admin(client, admin, trip, sql, c
     response = client.get(f'/vacations/{trip}/edit')
     assert response.status_code == 302
     assert response.location.endswith('/login')
-    with client.session_transaction() as session:
-        assert 'current_user' not in session
+    assert client.get_cookie(COOKIE) is None
 
 
 def test_authenticated_request_closes_real_mysql_connection(client, admin):
-    with client.session_transaction() as session:
-        session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
-        from utils.auth_status import get_status
-        session['auth_status'] = get_status(admin)
-        session['password_fingerprint'] = session_fingerprint(admin)
+    sign_in(client, admin)
     # Observe the actual handles during the request; do not replace the driver.
     seen = []
     def capture(sender, template, context, **extra):
@@ -183,35 +174,27 @@ def test_authenticated_request_closes_real_mysql_connection(client, admin):
 
 
 @pytest.mark.parametrize('missing', [False, True])
-def test_redis_disabled_or_missing_status_blocks_flask_session(client, admin, missing):
-    from utils.auth_status import get_redis, get_status
+def test_redis_disabled_or_missing_status_blocks_flask_jwt(client, admin, missing):
+    from utils.auth_status import get_redis
     store = get_redis()
     key = f'vacations:auth:status:{admin}'
-    with client.session_transaction() as session:
-        session['current_user'] = {'id': admin, 'role': 1}
-        session['auth_status'] = get_status(admin)
-        session['password_fingerprint'] = session_fingerprint(admin)
+    sign_in(client, admin)
     try:
         if missing:
             store.delete(key)
         else:
             store.set(key, 'disabled:integration-test')
         assert client.get('/vacations').status_code == 302
-        with client.session_transaction() as session:
-            assert 'current_user' not in session
+        assert client.get_cookie(COOKIE) is None
     finally:
         store.delete(key)
 
 
 def test_real_mysql_edit_validation_unchanged_update_and_missing_record(client, admin, trip, sql):
-    with client.session_transaction() as session:
-        session['current_user'] = {'id': admin, 'role': 1, 'first_name': 'Test', 'last_name': 'Admin'}
-        from utils.auth_status import get_status
-        session['auth_status'] = get_status(admin)
-        session['password_fingerprint'] = session_fingerprint(admin)
+    sign_in(client, admin)
     client.get(f'/vacations/{trip}/edit')
-    with client.session_transaction() as session:
-        token = session['_csrf_token']
+    with app.test_request_context(headers={"Cookie": f"{COOKIE}={client.get_cookie(COOKIE).value}"}):
+        token = get_claims()["csrf"]
     form = {'csrf_token': token, 'country': '1', 'description': 'MySQL holiday',
             'start_date': '2099-01-01', 'end_date': '2099-01-02', 'price': '123.45'}
     assert client.post(f'/vacations/{trip}/edit', data={**form, 'price': 'bad'}).status_code == 200

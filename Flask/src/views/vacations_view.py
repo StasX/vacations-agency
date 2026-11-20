@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, g, render_template, request, redirect, url_for
 from models.client_errors import ValidationError, AuthError
 from facades.auth_facade import AuthFacade
 from facades.vacations_facade import VacationsFacade
@@ -22,8 +22,7 @@ def list():
         vacations_facade = VacationsFacade()
         all_vacations = vacations_facade.get_all_vacations()
         # If user is Admin display admin's template
-        current_user = session.get("current_user")
-        if current_user.get("role") == RoleModel.Admin.value:
+        if g.current_user["role"] == RoleModel.Admin.value:
             return render_template("admin_vacations.html", vacations=all_vacations)
         # Other way display User's template
         return render_template("user_vacations.html", vacations=all_vacations)

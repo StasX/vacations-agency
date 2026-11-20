@@ -70,6 +70,11 @@ production settings. `example.env` is a legacy template; use the separate templa
 for new deployments. Compose passes values explicitly and disables backend dotenv
 discovery, so containers do not load another project's environment file.
 
+When upgrading Flask from session cookies, add a new random
+`FLASK_JWT_SECRET_KEY` of at least 32 bytes to the selected environment file and
+rebuild the catalog and Redis images. The old `SESSION_SECRET_KEY` can be removed.
+Users sign in again after the upgrade.
+
 Serve both applications through an HTTPS reverse proxy. On the Docker host, route
 the catalog domain to `127.0.0.1:5000` and dashboard domain to `127.0.0.1:3000`.
 Nginx inside the dashboard container forwards `/api/` to Django. Preserve the public

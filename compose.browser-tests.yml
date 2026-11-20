@@ -10,7 +10,7 @@ x-environment: &environment
   MYSQL_USER: integration
   MYSQL_PASSWORD: integration-tests-only
   SECRET_KEY: browser-tests-only-signing-key-at-least-32-bytes
-  SESSION_SECRET_KEY: browser-tests-only-session-key
+  FLASK_JWT_SECRET_KEY: browser-tests-only-flask-jwt-key-at-least-32-bytes
   PASSWORDS_SALT: browser-tests-only
   ISSUER: browser-tests
   AUDIENCE: browser-tests

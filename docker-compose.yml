@@ -173,7 +173,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:?Set SESSION_SECRET_KEY in the selected environment file}
+      FLASK_JWT_SECRET_KEY: ${FLASK_JWT_SECRET_KEY:?Set FLASK_JWT_SECRET_KEY in the selected environment file}
       JWT_REDIS_URL: redis://vacations-redis:6379/0
       JWT_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
       FLASK_COOKIE_SECURE: "true"

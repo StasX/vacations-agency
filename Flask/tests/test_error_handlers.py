@@ -64,7 +64,7 @@ def test_csrf_failure_renders_error_page(client, app):
     ("/logout", "get", 405),
     ("/login", "post", 400),
 ])
-def test_error_navigation_uses_session(client, app, sign_in, signed_in, path, method, status):
+def test_error_navigation_uses_jwt(client, app, sign_in, signed_in, path, method, status):
     app.config["CSRF_ENABLED"] = True
     if signed_in:
         sign_in()
@@ -76,7 +76,7 @@ def test_error_navigation_uses_session(client, app, sign_in, signed_in, path, me
 
 
 @pytest.mark.parametrize("signed_in", [False, True])
-def test_server_error_navigation_uses_session(client, app, sign_in, monkeypatch, signed_in):
+def test_server_error_navigation_uses_jwt(client, app, sign_in, monkeypatch, signed_in):
     if signed_in:
         sign_in()
     def fail():

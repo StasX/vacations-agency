@@ -4,15 +4,13 @@ from os import environ
 
 class ProductionConfig:
     DEBUG = False
-    SESSION_COOKIE_SECURE = True
-    SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'
+    AUTH_COOKIE_SECURE = True
     CSRF_ENABLED = True
 
 
 class DevelopmentConfig(ProductionConfig):
     DEBUG = True
-    SESSION_COOKIE_SECURE = False
+    AUTH_COOKIE_SECURE = False
 
 
 def get_config():
@@ -21,6 +19,6 @@ def get_config():
         return ProductionConfig
     if environment == 'development':
         class LocalConfig(DevelopmentConfig):
-            SESSION_COOKIE_SECURE = environ.get('FLASK_COOKIE_SECURE', 'false').strip().lower() in ('true', '1', 'yes', 'on')
+            AUTH_COOKIE_SECURE = environ.get('FLASK_COOKIE_SECURE', 'false').strip().lower() in ('true', '1', 'yes', 'on')
         return LocalConfig
     raise ValueError('APP_ENV must be development or production')

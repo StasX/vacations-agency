@@ -12,11 +12,8 @@ class Security:
 
     @staticmethod
     def password_fingerprint(stored_hash):
-        # Sessions are signed but readable: never put the password hash in them.
-        key = current_app.secret_key
-        if isinstance(key, str):
-            key = key.encode('utf-8')
-        return hmac_new(key, ('flask-session-password:' + stored_hash).encode('utf-8'), 'sha256').hexdigest()
+        key = current_app.config["JWT_SECRET_KEY"].encode("utf-8")
+        return hmac_new(key, ('flask-jwt-password:' + stored_hash).encode('utf-8'), 'sha256').hexdigest()
 
     @staticmethod
     def hash(plain_text):

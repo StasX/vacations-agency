@@ -8,7 +8,7 @@ x-test-environment: &test-environment
   MYSQL_USER: integration
   MYSQL_PASSWORD: integration-tests-only
   SECRET_KEY: mysql-integration-only-signing-key-at-least-32-bytes
-  SESSION_SECRET_KEY: mysql-integration-only-session-key
+  FLASK_JWT_SECRET_KEY: mysql-integration-only-flask-jwt-key
   PASSWORDS_SALT: integration-tests-only
   ISSUER: mysql-integration-tests
   AUDIENCE: mysql-integration-tests

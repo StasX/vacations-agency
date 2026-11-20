@@ -1,7 +1,7 @@
 <header class="container-fluid">
     <div class="row">
         <div class="col-md-2 col-sm-2 coll-xs-3 offset-md-10 offset-sm-10 offset-xs-9">
-            {% set user = session.get("current_user") %}
+            {% set user = g.current_user %}
             <div class="user-container">
                 <div class="welcome-user">Welcome: <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span></div>
                 {% include "logout_form.html" %}

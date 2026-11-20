@@ -6,14 +6,14 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 
 
 @pytest.mark.parametrize("value, expected", [(None, False), ("true", True), (" YES ", True), ("false", False), ("0", False)])
-def test_session_cookie_secure_environment(monkeypatch, value, expected):
+def test_auth_cookie_secure_environment(monkeypatch, value, expected):
     monkeypatch.setenv('APP_ENV', 'development')
     monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
     monkeypatch.delenv("FLASK_COOKIE_SECURE", raising=False)
     if value is not None:
         monkeypatch.setenv("FLASK_COOKIE_SECURE", value)
     config = runpy.run_path(str(SRC / "utils/app_config.py"))["AppConfig"]
-    assert config.session_cookie_secure is expected
+    assert config.flask_config.AUTH_COOKIE_SECURE is expected
 
 
 def test_production_profile_enforces_secure_defaults(monkeypatch):
@@ -22,7 +22,7 @@ def test_production_profile_enforces_secure_defaults(monkeypatch):
     monkeypatch.setenv('FLASK_COOKIE_SECURE', 'false')
     monkeypatch.setenv('FLASK_DEBUG', 'true')
     config = runpy.run_path(str(SRC / 'utils/app_config.py'))['AppConfig']
-    assert config.session_cookie_secure is True
+    assert config.flask_config.AUTH_COOKIE_SECURE is True
     assert config.flask_config.DEBUG is False
     assert config.flask_config.CSRF_ENABLED is True
 
@@ -33,7 +33,7 @@ def test_development_profile_preserves_csrf(monkeypatch):
     monkeypatch.delenv('FLASK_COOKIE_SECURE', raising=False)
     config = runpy.run_path(str(SRC / 'utils/app_config.py'))['AppConfig']
     assert config.flask_config.DEBUG is True
-    assert config.session_cookie_secure is False
+    assert config.flask_config.AUTH_COOKIE_SECURE is False
     assert config.flask_config.CSRF_ENABLED is True
 
 
@@ -45,14 +45,14 @@ def test_unknown_profile_rejected(monkeypatch):
 
 
 @pytest.mark.parametrize("secure", [True, False])
-def test_session_cookie_headers(app, monkeypatch, secure):
-    from flask import session
+def test_auth_cookie_headers(app, monkeypatch, secure):
+    from utils.auth_token import COOKIE, set_auth_cookie
 
-    monkeypatch.setitem(app.config, "SESSION_COOKIE_SECURE", secure)
+    monkeypatch.setitem(app.config, "AUTH_COOKIE_SECURE", secure)
     with app.test_request_context("/", base_url="https://localhost"):
-        session["current_user"] = {"id": 7}
-        response = app.process_response(app.response_class())
+        response = set_auth_cookie(app.response_class(), "token")
     cookie = response.headers["Set-Cookie"]
+    assert cookie.startswith(f"{COOKIE}=")
     assert "HttpOnly" in cookie
     assert "SameSite=Lax" in cookie
     assert ("Secure" in cookie) is secure
@@ -61,7 +61,7 @@ def test_session_cookie_headers(app, monkeypatch, secure):
 def test_configuration_reads_environment(monkeypatch):
     expected = {
         "MYSQL_HOST": "test-host", "MYSQL_USER": "test-user", "MYSQL_PASSWORD": "test-password",
-        "MYSQL_DATABASE": "test-db", "SESSION_SECRET_KEY": "test-secret", "PASSWORDS_SALT": "test-salt",
+        "MYSQL_DATABASE": "test-db", "FLASK_JWT_SECRET_KEY": "test-secret", "PASSWORDS_SALT": "test-salt",
     }
     for key, value in expected.items():
         monkeypatch.setenv(key, value)
@@ -70,7 +70,7 @@ def test_configuration_reads_environment(monkeypatch):
     for attribute, key in [
         ("mysql_host", "MYSQL_HOST"), ("mysql_user", "MYSQL_USER"),
         ("mysql_password", "MYSQL_PASSWORD"), ("mysql_database", "MYSQL_DATABASE"),
-        ("session_secret_key", "SESSION_SECRET_KEY"), ("passwords_salt", "PASSWORDS_SALT"),
+        ("jwt_secret_key", "FLASK_JWT_SECRET_KEY"), ("passwords_salt", "PASSWORDS_SALT"),
     ]:
         assert getattr(config, attribute) == expected[key]
 

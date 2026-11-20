@@ -1,3 +1,4 @@
+from utils.auth_token import COOKIE
 import re
 from datetime import date
 from io import BytesIO
@@ -39,22 +40,21 @@ def test_form_tokens_allow_submission(client, app, sign_in, path, target):
     page = client.get(path)
     assert page.status_code == 200
     token = re.search(rb'name="csrf_token" value="([^"]+)"', page.data).group(1).decode()
-    with patch(target) as submit:
+    with patch(target, return_value="new-token") as submit:
         response = client.post(path, data={"csrf_token": token, "image": (BytesIO(b"image"), "trip.jpg")})
     assert response.status_code == 302
     submit.assert_called_once()
 
 
-def test_token_from_another_session_is_rejected(client, app):
-    client.get("/login")
-    with client.session_transaction() as session:
-        token = session["_csrf_token"]
+def test_token_from_another_browser_is_rejected(client, app):
+    page = client.get("/login")
+    token = re.search(rb'name="csrf_token" value="([^"]+)"', page.data).group(1).decode()
     other = app.test_client()
     other.get("/login")
     assert other.post("/login", data={"csrf_token": token}).status_code == 400
 
 
-def test_token_without_session_is_rejected(client):
+def test_token_without_cookie_is_rejected(client):
     assert client.post("/login", data={"csrf_token": "forged"}).status_code == 400
 
 
@@ -106,11 +106,9 @@ def test_logout_requires_post_and_valid_token(client, app, sign_in, role):
     assert client.get("/logout").status_code == 405
     for data in ({}, {"csrf_token": "forged"}):
         assert client.post("/logout", data=data).status_code == 400
-        with client.session_transaction() as session:
-            assert session["current_user"]["id"] == 7
+        assert client.get_cookie(COOKIE) is not None
     response = client.post("/logout", data={"csrf_token": token})
     assert response.status_code == 302
     assert response.location == "/login"
-    with client.session_transaction() as session:
-        assert not session
+    assert client.get_cookie(COOKIE) is None
     assert client.get("/vacations").location == "/login"

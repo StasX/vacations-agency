@@ -37,7 +37,7 @@ class ImageHandler:
         return target
 
     @staticmethod
-    def save_image(image):
+    def save_image(image, *, before_write=None):
         if image is None or not image.filename:
             return None
         contents = image.stream.read(ImageHandler.max_bytes + 1)
@@ -61,28 +61,27 @@ class ImageHandler:
         # Choose the extension from decoded content and strip embedded metadata.
         clean_image.info.clear()
         image_name = str(uuid4()) + ImageHandler.formats[image_format]
-        if environ.get("MINIO_ENDPOINT"):
-            from utils.minio_images import image_storage
+        try:
+            if before_write is not None:
+                before_write(image_name)
+            if environ.get("MINIO_ENDPOINT"):
+                from utils.minio_images import image_storage
 
-            try:
                 with BytesIO() as contents:
                     clean_image.save(contents, format=image_format)
                     length = contents.tell()
                     contents.seek(0)
                     client, bucket = image_storage()
                     client.put_object(bucket, image_name, contents, length, content_type=Image.MIME[image_format])
-            finally:
-                clean_image.close()
-            return image_name
-
-        directory = ImageHandler._directory()
-        directory.mkdir(parents=True, exist_ok=True)
-        target = ImageHandler._path(image_name)
-        try:
-            clean_image.save(target, format=image_format)
-        except Exception:
-            target.unlink(missing_ok=True)
-            raise
+            else:
+                directory = ImageHandler._directory()
+                directory.mkdir(parents=True, exist_ok=True)
+                target = ImageHandler._path(image_name)
+                try:
+                    clean_image.save(target, format=image_format)
+                except Exception:
+                    target.unlink(missing_ok=True)
+                    raise
         finally:
             clean_image.close()
         return image_name

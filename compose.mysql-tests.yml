@@ -19,6 +19,12 @@ x-test-environment: &test-environment
   PYTHON_DOTENV_DISABLED: "1"
 
 services:
+  minio:
+    build: ./MinIO
+    environment:
+      MINIO_ROOT_USER: integration-minio
+      MINIO_ROOT_PASSWORD: integration-minio-tests-only
+
   redis:
     container_name: vacations-mysql-tests-redis
     build: ./Redis
@@ -91,6 +97,8 @@ services:
       <<: *test-environment
       TEST_APPLICATION: Flask
     depends_on:
+      minio:
+        condition: service_healthy
       database-migrations:
         condition: service_completed_successfully
       redis:

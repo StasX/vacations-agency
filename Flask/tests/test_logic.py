@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from unittest.mock import MagicMock
+from unittest.mock import ANY, MagicMock
 import pytest
 from logic.auth_logic import AuthLogic
 from logic.countries_logic import CountriesLogic
@@ -79,7 +79,7 @@ def test_vacation_update_parameters(app, monkeypatch):
         "logic.vacations_logic.ImageHandler.save_image", update_image)
     monkeypatch.setattr("logic.vacations_logic.ImageHandler.delete_image", MagicMock())
     VacationsLogic().update_vacation(vacation)
-    update_image.assert_called_once_with(image)
+    update_image.assert_called_once_with(image, before_write=ANY)
     sql, params = app.test_dal.update.call_args.args
     assert vacation.description not in sql
     assert params == ("1", vacation.description, "2099-01-01",
@@ -107,9 +107,16 @@ def test_failed_vacation_write_only_discards_upload_before_commit(app, monkeypat
     app.test_dal.transaction.side_effect = transaction
     app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
     if not during_commit:
-        statement = app.test_dal.insert if operation == "add" else app.test_dal.update
-        statement.side_effect = OSError("statement failed")
-    monkeypatch.setattr("logic.vacations_logic.ImageHandler.save_image", lambda image: "new.jpg")
+        if operation == "add":
+            app.test_dal.insert.side_effect = [None, OSError("statement failed")]
+        else:
+            app.test_dal.update.side_effect = OSError("statement failed")
+
+    def save_image(image, *, before_write):
+        before_write("new.jpg")
+        return "new.jpg"
+
+    monkeypatch.setattr("logic.vacations_logic.ImageHandler.save_image", save_image)
     delete_image = MagicMock()
     monkeypatch.setattr("logic.vacations_logic.ImageHandler.delete_image", delete_image)
 
@@ -117,7 +124,14 @@ def test_failed_vacation_write_only_discards_upload_before_commit(app, monkeypat
     with pytest.raises(OSError, match="commit" if during_commit else "statement failed"):
         getattr(VacationsLogic(), f"{operation}_vacation")(vacation)
 
+    sql, params = app.test_dal.insert.call_args_list[0].args
+    assert "INSERT INTO vacation_image_cleanup" in sql
+    assert params[0] == "new.jpg"
     if during_commit:
+        sql, params = app.test_dal.delete.call_args.args
+        assert "DELETE FROM vacation_image_cleanup" in sql
+        assert params == ("new.jpg",)
         delete_image.assert_not_called()
     else:
+        app.test_dal.delete.assert_not_called()
         delete_image.assert_called_once_with("new.jpg")

@@ -66,7 +66,11 @@ def test_database_failure_preserves_old_image_and_cleans_new(app, image_director
     old = image_directory / "old.jpg"
     old.write_bytes(make_image())
     app.test_dal.get_scalar.return_value = {"image": "old.jpg"}
-    getattr(app.test_dal, operation).side_effect = RuntimeError("database unavailable")
+    failure = RuntimeError("database unavailable")
+    if operation == "insert":
+        app.test_dal.insert.side_effect = [None, failure]
+    else:
+        getattr(app.test_dal, operation).side_effect = failure
     vacation = VacationModel(12, "1", "Trip", "2099-01-01", "2099-01-02", "100", upload(make_image("blue")))
     with app.app_context(), pytest.raises(RuntimeError):
         logic = VacationsLogic()

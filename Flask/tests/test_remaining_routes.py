@@ -247,7 +247,7 @@ def test_disappeared_update_returns_404_and_removes_new_image(client, app, sign_
     sign_in(1)
     old = image_directory / 'old.jpg'
     old.write_bytes(b'old')
-    app.test_dal.get_scalar.side_effect = [{'image': old.name}, None]
+    app.test_dal.get_scalar.side_effect = [{'image': old.name}, {'image_name': 'reserved'}, None]
     app.test_dal.update.return_value = 0
     response = client.post('/vacations/12/edit', data=form(image=(BytesIO(make_image()), 'new.jpg')))
     assert response.status_code == 404

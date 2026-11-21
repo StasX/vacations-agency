@@ -1,4 +1,5 @@
 from datetime import date
+from io import BytesIO
 from pathlib import Path
 
 import pytest
@@ -261,3 +262,78 @@ def test_migrated_image_queue_retries_and_preserves_shared_images(client, trip, 
                 logic.close()
     finally:
         sql.execute("DELETE FROM vacation_image_cleanup WHERE image_name='old.jpg'")
+
+
+@pytest.mark.parametrize('failure', ['upload-response', 'commit-rollback', 'commit-response'])
+def test_failed_upload_recovery_with_mysql_and_minio(sql, monkeypatch, failure):
+    from PIL import Image
+    from werkzeug.datastructures import FileStorage
+
+    from logic.vacations_logic import VacationsLogic
+    from models.vacation_model import VacationModel
+    from utils.image_cleanup import process_next_image
+    from utils.minio_images import image_storage, object_exists
+
+    monkeypatch.setenv('MINIO_ENDPOINT', 'minio:9000')
+    monkeypatch.setenv('MINIO_ACCESS_KEY', 'integration-minio')
+    monkeypatch.setenv('MINIO_SECRET_KEY', 'integration-minio-tests-only')
+    monkeypatch.setenv('MINIO_SECURE', 'false')
+    client, bucket = image_storage()
+    if not client.bucket_exists(bucket):
+        client.make_bucket(bucket)
+    uploaded = []
+    put_object = client.put_object
+
+    def put_then_fail(bucket_name, image_name, *args, **kwargs):
+        result = put_object(bucket_name, image_name, *args, **kwargs)
+        uploaded.append(image_name)
+        if failure == 'upload-response':
+            raise OSError('lost upload response')
+        return result
+
+    monkeypatch.setattr(client, 'put_object', put_then_fail)
+    if failure == 'upload-response':
+        from utils.image_handler import ImageHandler
+
+        def unavailable(image_name):
+            raise OSError('immediate cleanup failed')
+
+    contents = BytesIO()
+    with Image.new('RGB', (2, 2)) as image:
+        image.save(contents, format='JPEG')
+    contents.seek(0)
+    vacation = VacationModel(None, '1', 'Failed upload test', '2099-01-01', '2099-01-02',
+                             '123.45', FileStorage(contents, filename='trip.jpg'))
+    logic = VacationsLogic()
+    commit = logic.dal.connection.commit
+
+    def fail_commit():
+        if failure == 'commit-response':
+            commit()
+        raise OSError('lost commit response')
+
+    try:
+        with app.app_context(), monkeypatch.context() as fault:
+            if failure == 'upload-response':
+                fault.setattr(ImageHandler, 'delete_image', unavailable)
+            else:
+                fault.setattr(logic.dal.connection, 'commit', fail_commit)
+            with pytest.raises(OSError, match='lost .* response'):
+                logic.add_vacation(vacation)
+
+        name, = uploaded
+        assert object_exists(client, bucket, name)
+        sql.execute('SELECT id FROM vacations WHERE image=%s', (name,))
+        assert (sql.fetchone() is not None) == (failure == 'commit-response')
+        sql.execute('UPDATE vacation_image_cleanup SET next_attempt_at=CURRENT_TIMESTAMP WHERE image_name=%s',
+                    (name,))
+        assert sql.rowcount == (0 if failure == 'commit-response' else 1)
+        with app.app_context():
+            assert process_next_image(logic.dal) == (failure != 'commit-response')
+        assert object_exists(client, bucket, name) == (failure == 'commit-response')
+    finally:
+        logic.close()
+        for name in uploaded:
+            client.remove_object(bucket, name)
+            sql.execute('DELETE FROM vacation_image_cleanup WHERE image_name=%s', (name,))
+        image_storage.cache_clear()
